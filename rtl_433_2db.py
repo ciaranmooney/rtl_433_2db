@@ -20,10 +20,9 @@ DB_FILE = "/var/lib/temperaturedb/tempdb.sqlite"
 # END CONFIG
 
 class asyncFileReader(threading.Thread):
-    '''
-    Helper class to implement asynchronous reading of a file
-    in a separate thread. Pushes read lines on a queue to
-    be consumed in another thread.
+    ''' Helper class to implement asynchronous reading of a file
+        in a separate thread. Pushes read lines on a queue to
+        be consumed in another thread.
     '''
 
     def __init__(self, fd, queue):
@@ -34,22 +33,15 @@ class asyncFileReader(threading.Thread):
         self._queue = queue
 
     def run(self):
-        '''The body of the tread: read lines and put them on the queue.'''
+        ''' The body of the tread: read lines and put them on the queue.'''
         for line in iter(self._fd.readline, ''):
             self._queue.put(line)
 
     def eof(self):
-        '''Check whether there is no more content to expect.'''
+        ''' Check whether there is no more content to expect.'''
         return not self.is_alive() and self._queue.empty()
 
-def replace(string):
-    ''' Replaces '  ' with ' ' in a string. 
-    '''
-    while '  ' in string:
-        string = string.replace('  ', ' ')
-    return string
-
-def initDatabase(db_file):
+class initDatabase(sqlite):
     ''' Initialise database with the filelocation, db_file. If no database is
         present, then try and create it.
 
@@ -57,52 +49,51 @@ def initDatabase(db_file):
         ---
         xxx
     '''
-    try:
-        print("Connecting to database")
-        cnx = mysql.connector.connect(**config)
-    except mysql.connector.Error as err:
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Something is wrong with your user name or password")
-        elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exists, please create it before using this script.")
-            print("Tables can be created by the script.")
-        else:
-            print(err)
-    reconnectdb=0#if 0 then no error or need ro be reconnected
-    #else:
-    #cnx.close()
-    cursor = cnx.cursor()
-    TABLES = {}
-    TABLES['SensorData'] = (
-        "CREATE TABLE `SensorData` ("
-        "  `sensor_id` INT UNSIGNED NOT NULL,"
-        "  `whatdata` varchar(50) NOT NULL,"
-        "  `data` float NOT NULL,"
-        "  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-        ") ENGINE =InnoDB DEFAULT CHARSET=latin1")
-    for name, ddl in TABLES.iteritems():
-        try:
-            print("Checking table {}: ".format(name))
-            cursor.execute(ddl)
-        except mysql.connector.Error as err:
-            if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
-                print("Table seams to exist, no need to create it.")
-            else:
-                print(err.msg)
-        else:
-            print("OK")
+
+    def __init__(self, database_path):
+        '''
+        '''
+        self.db = sqlite3.connect(database_path)
+        self.cur = self.db.cursor()
+        table_exists = self.cur.execute('''SELECT name FROM sqlite_master 
+                                    WHERE type='table' AND name='ips';''')
+        table_exists = self.cur.fetchone()
+        
+        if table_exists == None:
+            self.create_tables(db)
+                       
+    def create_tables(self):
+        ''' Creates a database with the tables described above.
+        '''
+        self.cur.execute('CREATE TABLE sensor_data  
+                         (id integer, date text, sensorID int, 
+                          temperature_C float, io text)')
+        self.db.commit()
+        self.cur.execute('CREATE TABLE current_id (max_id int)')
+        self.db.commit()
+        self.db.close()
+
+    def close(self):
+        '''
+        '''
+        self.db.close()
+
+    def add_data(self, json_data):
+        '''
+        '''
+        pass
+
     add_sensordata= ("INSERT INTO SensorData "
                      "(sensor_id, whatdata, data) "
                      "VALUES (%s, %s, %s)")
 
-def startSubProcess(command, db_location):
-    '''
-    Example of how to consume standard output and standard error of
-    a subprocess asynchronously without risk on deadlocking.
+def startSubProcess(command, database):
+    ''' Example of how to consume standard output and standard error of
+        a subprocess asynchronously without risk on deadlocking.
     '''
     print "\n\nStarting sub process " + command + "\n"
+    
     # Launch the command as subprocess.
-
     process = subprocess.Popen(command, 
                                stdout=subprocess.PIPE, 
                                stderr=subprocess.PIPE)
@@ -115,8 +106,7 @@ def startSubProcess(command, db_location):
     stderr_queue = Queue.Queue()
     stderr_reader = asyncFileReader(process.stderr, stderr_queue)
     stderr_reader.start()
-    
-    db = initDatabase(db_location)
+   
 
     # do queue loop, entering data to database
     # Check the queues if we received some output until there is nothing more to get.
@@ -132,7 +122,7 @@ def startSubProcess(command, db_location):
                 # Whilst we have no errors
                 line = stdout_queue.get()
                 data = json.loads(line)
-                # put data into sqlite database.
+                db.write(data) # put data into sqlite database.
         
             # Sleep a bit before asking the readers again.
             time.sleep(.1)
@@ -143,6 +133,7 @@ def startSubProcess(command, db_location):
         cnx.close()
     except:
         pass
+
     stdout_reader.join()
     stderr_reader.join()
 
@@ -151,6 +142,7 @@ def startSubProcess(command, db_location):
     process.stderr.close()
 
 if __name__ == '__main__':
-
-    startSubProcess("./rtl_433 -R 39 -F json", db_file)
+    db = initDatabase(db_file)
+    startSubProcess("./rtl_433 -R 39 -F json", db)
+    db.close()
     print("Closing down")
