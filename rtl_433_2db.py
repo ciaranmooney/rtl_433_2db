@@ -61,7 +61,9 @@ class initDatabase(sqlite):
         
         if table_exists == None:
             self.create_tables(db)
-                       
+        
+        self.max_id = self.get_max_id()
+
     def create_tables(self):
         ''' Creates a database with the tables described above.
         '''
@@ -71,7 +73,7 @@ class initDatabase(sqlite):
         self.db.commit()
         self.cur.execute('CREATE TABLE current_id (max_id int)')
         self.db.commit()
-        self.db.close()
+        self.close()
 
     def close(self):
         '''
@@ -81,11 +83,14 @@ class initDatabase(sqlite):
     def add_data(self, json_data):
         '''
         '''
-        pass
 
-    add_sensordata= ("INSERT INTO SensorData "
-                     "(sensor_id, whatdata, data) "
-                     "VALUES (%s, %s, %s)")
+        self.cur.execute("INSERT INTO sensor_data VALUES
+                          (?,?,?)", data['id'])
+
+    def get_max_id(self):
+        '''
+        '''
+        pass
 
 def startSubProcess(command, database):
     ''' Example of how to consume standard output and standard error of
