@@ -33,12 +33,14 @@ class asyncFileReader(threading.Thread):
         self._queue = queue
 
     def run(self):
-        ''' The body of the tread: read lines and put them on the queue.'''
+        ''' The body of the tread: read lines and put them on the queue.
+        '''
         for line in iter(self._fd.readline, ''):
             self._queue.put(line)
 
     def eof(self):
-        ''' Check whether there is no more content to expect.'''
+        ''' Check whether there is no more content to expect.
+        '''
         return not self.is_alive() and self._queue.empty()
 
 class initDatabase(sqlite):
@@ -76,21 +78,33 @@ class initDatabase(sqlite):
         self.close()
 
     def close(self):
-        '''
+        ''' Re-wraps the sqlite3 database closure function.
         '''
         self.db.close()
 
-    def add_data(self, json_data):
+    def write(self, json_data):
+        ''' Takes json_data and writes it to the sqlite database.
+            Increments the max_id.
         '''
-        '''
-
+        new_max_id = self.max_id + 1
         self.cur.execute("INSERT INTO sensor_data VALUES
-                          (?,?,?)", data['id'])
+                          (?,?,?,?,?)", (new_max_id,datetime,data['id'],
+                          data['temp'], data['io']))
+        self.db.commit()
+
+        self.cur.execute("DELETE from current_id WHERE max_id = ?", 
+                          (self.max_id,))
+        self.db.commit()
+        self.cur.execute("INSERT INTO current_id ?", new_max_id)
+        self.db.commit()
+        self.max_id = self.get_max_id()
 
     def get_max_id(self):
+        ''' Returns the (only) value in the current_id table.
         '''
-        '''
-        pass
+        self.cur.execute("SELECT * from current_id;")
+        return self.cur.fetchone
+
 
 def startSubProcess(command, database):
     ''' Example of how to consume standard output and standard error of
@@ -112,7 +126,6 @@ def startSubProcess(command, database):
     stderr_reader = asyncFileReader(process.stderr, stderr_queue)
     stderr_reader.start()
    
-
     # do queue loop, entering data to database
     # Check the queues if we received some output until there is nothing more to get.
     
@@ -134,8 +147,7 @@ def startSubProcess(command, database):
 
     # Let's be tidy and join the threads we've started.
     try:
-        cursor.close()
-        cnx.close()
+        db.close()
     except:
         pass
 
@@ -149,5 +161,4 @@ def startSubProcess(command, database):
 if __name__ == '__main__':
     db = initDatabase(db_file)
     startSubProcess("./rtl_433 -R 39 -F json", db)
-    db.close()
     print("Closing down")
