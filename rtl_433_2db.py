@@ -111,11 +111,12 @@ class initDatabase(object):
         return self.cur.fetchone
 
 
-def startSubProcess(command, database):
+def startSubProcess(rtl_path, database):
     ''' Example of how to consume standard output and standard error of
         a subprocess asynchronously without risk on deadlocking.
     '''
-    print "\n\nStarting sub process " + command + "\n"
+    command = [rtl_path, "-R", "39","-F", "json"]
+    print "\nStarting RTL433\n"
     
     # Launch the command as subprocess.
     process = subprocess.Popen(command, 
