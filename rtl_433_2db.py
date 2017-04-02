@@ -1,3 +1,6 @@
+#! /usr/bin/env python 
+# -*- coding: utf-8 -*-
+
 # A script that runs rtl_433 and logs the json results to an sqlite database.
 # 
 # Based on the script by jcarduino available at:
@@ -5,18 +8,18 @@
 # 
 # Modifications Copyright 2017 Ciarán Mooney
 
-#! /usr/bin/python3
 # import sys
 
 import subprocess
 import time
 import threading
 import Queue
-import sqlite3
+import sqlite3 as sq
 import json
 
 # BEGIN CONFIG
 DB_FILE = "/var/lib/temperaturedb/tempdb.sqlite"
+RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
 # END CONFIG
 
 class asyncFileReader(threading.Thread):
@@ -43,7 +46,7 @@ class asyncFileReader(threading.Thread):
         '''
         return not self.is_alive() and self._queue.empty()
 
-class initDatabase(sqlite):
+class initDatabase(object):
     ''' Initialise database with the filelocation, db_file. If no database is
         present, then try and create it.
 
@@ -52,26 +55,29 @@ class initDatabase(sqlite):
         xxx
     '''
 
-    def __init__(self, database_path):
+    def __init__(self, sq, db_path):
         '''
         '''
-        self.db = sqlite3.connect(database_path)
+        self.db = sq.connect(db_path)
+        #except sq.OperationalError:
+        #    print("No directory for database")
+        
         self.cur = self.db.cursor()
         table_exists = self.cur.execute('''SELECT name FROM sqlite_master 
-                                    WHERE type='table' AND name='ips';''')
+                                    WHERE type='table' AND name='sensor_data';''')
         table_exists = self.cur.fetchone()
         
         if table_exists == None:
-            self.create_tables(db)
+            self.create_tables()
         
         self.max_id = self.get_max_id()
 
     def create_tables(self):
         ''' Creates a database with the tables described above.
         '''
-        self.cur.execute('CREATE TABLE sensor_data  
+        self.cur.execute('''CREATE TABLE sensor_data  
                          (id integer, date text, sensorID int, 
-                          temperature_C float, io text)')
+                          temperature_C float, io text)''')
         self.db.commit()
         self.cur.execute('CREATE TABLE current_id (max_id int)')
         self.db.commit()
@@ -87,11 +93,10 @@ class initDatabase(sqlite):
             Increments the max_id.
         '''
         new_max_id = self.max_id + 1
-        self.cur.execute("INSERT INTO sensor_data VALUES
-                          (?,?,?,?,?)", (new_max_id,datetime,data['id'],
-                          data['temp'], data['io']))
+        self.cur.execute('''INSERT INTO sensor_data VALUES
+                          (?,?,?,?,?)", (new_max_id, datetime, data['id'],
+                          data['temp'], data['io'])''')
         self.db.commit()
-
         self.cur.execute("DELETE from current_id WHERE max_id = ?", 
                           (self.max_id,))
         self.db.commit()
@@ -140,7 +145,7 @@ def startSubProcess(command, database):
                 # Whilst we have no errors
                 line = stdout_queue.get()
                 data = json.loads(line)
-                db.write(data) # put data into sqlite database.
+                database.write(data) # put data into sqlite database.
         
             # Sleep a bit before asking the readers again.
             time.sleep(.1)
@@ -159,6 +164,6 @@ def startSubProcess(command, database):
     process.stderr.close()
 
 if __name__ == '__main__':
-    db = initDatabase(db_file)
-    startSubProcess("./rtl_433 -R 39 -F json", db)
+    db = initDatabase(sq, DB_FILE)
+    startSubProcess(RTL433, db)
     print("Closing down")
