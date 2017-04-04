@@ -20,6 +20,7 @@ import json
 # BEGIN CONFIG
 DB_FILE = "/var/lib/temperaturedb/tempdb.sqlite"
 RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
+DEBUG = True
 # END CONFIG
 
 class asyncFileReader(threading.Thread):
@@ -110,12 +111,15 @@ class initDatabase(object):
         self.cur.execute("SELECT * from current_id;")
         return self.cur.fetchone
 
-
-def startSubProcess(rtl_path, database):
+def startSubProcess(rtl_path, database, debug=False):
     ''' Example of how to consume standard output and standard error of
         a subprocess asynchronously without risk on deadlocking.
     '''
-    command = [rtl_path, "-R", "39","-F", "json"]
+    if debug == False:
+        command = [rtl_path, "-R", "39","-F", "json"]
+    if debug == True:
+        test_files = '/home/ciaran/Code/rtl_433_tests/tests/wg_pb12v1'
+        command = [rtl_path, "-R", "39","-F", "json"]
     print "\nStarting RTL433\n"
     
     # Launch the command as subprocess.
@@ -166,5 +170,5 @@ def startSubProcess(rtl_path, database):
 
 if __name__ == '__main__':
     db = initDatabase(sq, DB_FILE)
-    startSubProcess(RTL433, db)
+    startSubProcess(RTL433, db, DEBUG)
     print("Closing down")
