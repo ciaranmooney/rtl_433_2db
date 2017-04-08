@@ -117,10 +117,13 @@ def startSubProcess(rtl_path, database, debug=False):
     '''
     if debug == False:
         command = [rtl_path, "-R", "39","-F", "json"]
+        print "\nStarting RTL433\n"
+
     if debug == True:
+        # just run the test .sh file in rtl_tests
         test_files = '/home/ciaran/Code/rtl_433_tests/tests/wg_pb12v1'
         command = [rtl_path, "-R", "39","-F", "json"]
-    print "\nStarting RTL433\n"
+        print "\nStarting RTL433 - Debug Mode\n"
     
     # Launch the command as subprocess.
     process = subprocess.Popen(command, 
