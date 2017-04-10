@@ -8,6 +8,10 @@
 # 
 # Modifications Copyright 2017 Ciarán Mooney
 
+# XXX
+# * The "model" field in the JSON output is the device name
+
+
 # import sys
 
 import subprocess
