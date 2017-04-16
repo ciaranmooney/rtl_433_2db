@@ -64,12 +64,40 @@ class TestDatabaseInit(unittest.TestCase):
     def test_close(self):
         '''
         '''
-        pass
+        # Candidate for mock.
+        self.assertTrue(False)
+    
+    def test_connect(self):
+        '''
+        '''
+        # Candidate for mock.
+        self.assertTrue(False)
 
     def test_write(self):
         '''
         '''
-        pass
+        test_json = {"time" : "@0.000000s", "model" : "WG-PB12V1", 
+                     "id" : 8, "temperature_C" : 20.900, 
+                     "io" : "111111110011001001100001011010001111111101001100"}
+        
+        self.db.cur.execute('''SELECT * FROM current_id;''')
+        table = self.db.cur.fetchone()
+        self.assertEqual(0, table[0])
+
+        self.db.write(test_json)
+        self.db.cur.execute("SELECT * FROM sensor_data")
+        data = self.db.cur.fetchall()
+        self.assertEqual(data[0][1], 0)
+        self.assertEqual(data[1][1], 'date')
+        self.assertEqual(data[2][1], 8)
+        self.assertEqual(data[3][1], 20.9)
+        self.assertEqual(data[4][1], '111111110011001001100001011010001111111101001100')
+
+        self.db.cur.execute('''SELECT * FROM current_id;''')
+        table = self.db.cur.fetchone()
+        self.assertEqual(1, table[0])
+        
+        self.assertTrue(False)
 
     def test_max_id(self):
         '''
