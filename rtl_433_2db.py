@@ -8,15 +8,12 @@
 # 
 # Modifications Copyright 2017 Ciarán Mooney
 
-# XXX
+# Notes 
 # * The "model" field in the JSON output is the device name
 
-
-# import sys
-
-# TODO
-# Code not Python3 compliant! 
-# Currently a problem with JSON str/byte
+# XXX
+# * Code not Python3 compliant! 
+# * Currently a problem with JSON str/byte
 
 import subprocess
 import time
@@ -118,6 +115,7 @@ class initDatabase(object):
         self.cur.execute("INSERT INTO current_id ?", new_max_id)
         self.db.commit()
         self.max_id = self.get_max_id()
+        self.close()
 
     def get_max_id(self):
         ''' Returns the (only) value in the current_id table.
