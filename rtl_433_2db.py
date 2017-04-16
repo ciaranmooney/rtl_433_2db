@@ -67,15 +67,16 @@ class initDatabase(object):
         '''
         '''
         self.db_path = db_path
-        self.db = sq.connect(self.db_path)
+        self.sq = sq
+        self.connect()
         #except sq.OperationalError:
         #    print("No directory for database")
         
-        self.cur = self.db.cursor()
         table_exists = self.cur.execute('''SELECT name FROM sqlite_master 
                                     WHERE type='table' AND name='sensor_data';''')
         table_exists = self.cur.fetchone()
-        
+        self.close()
+
         if table_exists == None:
             self.create_tables()
         
@@ -84,6 +85,7 @@ class initDatabase(object):
     def create_tables(self):
         ''' Creates a database with the tables described above.
         '''
+        self.connect()
         self.cur.execute('''CREATE TABLE sensor_data  
                          (id integer, date text, sensorID int, 
                           temperature_C float, io text)''')
@@ -94,21 +96,23 @@ class initDatabase(object):
         self.db.commit()
         self.close()
 
+    def connect(self):
+        '''
+        '''
+        self.db = self.sq.connect(self.db_path)
+        self.cur = self.db.cursor()
+    
     def close(self):
         ''' Re-wraps the sqlite3 database closure function.
         '''
         self.db.close()
-
-    def connect(self):
-        ''' Re-wraps the sqlite3 database connect function.
-        '''
-        pass
-
+        
     def write(self, json_data):
         ''' Takes json_data and writes it to the sqlite database.
             Increments the max_id.
         '''
         timestamp = str(datetime.now())
+        self.connect()
         self.cur.execute('''INSERT INTO sensor_data VALUES
                              (?,?,?,?,?)''', 
                              (self.max_id, timestamp, json_data['id'],
@@ -120,17 +124,18 @@ class initDatabase(object):
         self.cur.execute("INSERT INTO current_id values (?)", 
                           (self.max_id + 1,))
         self.db.commit()
-        
-        self.max_id = self.get_max_id() + 1
         self.close()
+
+        self.max_id = self.get_max_id() + 1
 
     def get_max_id(self):
         ''' Returns the (only) value in the current_id table.
         '''
-        self.db = sq.connect(self.db_path)
-        self.cur = self.db.cursor()
+        self.connect()
         self.cur.execute("SELECT * from current_id;")
-        return self.cur.fetchone()[0]
+        max_id =  self.cur.fetchone()[0]
+        self.close()
+        return max_id
 
 def startSubProcess(rtl_path, database, debug=False):
     ''' Example of how to consume standard output and standard error of
