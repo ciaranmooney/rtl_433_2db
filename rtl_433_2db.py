@@ -16,7 +16,7 @@
 # * Currently a problem with JSON str/byte
 
 import subprocess
-import time
+from datetime import datetime
 import threading
 import queue as Queue
 import sqlite3 as sq
@@ -99,22 +99,29 @@ class initDatabase(object):
         '''
         self.db.close()
 
+    def connect(self):
+        ''' Re-wraps the sqlite3 database connect function.
+        '''
+        pass
+
     def write(self, json_data):
         ''' Takes json_data and writes it to the sqlite database.
             Increments the max_id.
         '''
-        print(self.max_id)
-        new_max_id = self.max_id + 1
-        self.cur.execute('''"INSERT INTO sensor_data VALUES
-                          (?,?,?,?,?)", (new_max_id, datetime, data['id'],
-                          data['temp'], data['io'])''')
+        timestamp = str(datetime.now())
+        self.cur.execute('''INSERT INTO sensor_data VALUES
+                             (?,?,?,?,?)''', 
+                             (self.max_id, timestamp, json_data['id'],
+                              json_data['temperature_C'], json_data['io'],))
         self.db.commit()
         self.cur.execute("DELETE from current_id WHERE max_id = ?", 
                           (self.max_id,))
         self.db.commit()
-        self.cur.execute("INSERT INTO current_id ?", new_max_id)
+        self.cur.execute("INSERT INTO current_id values (?)", 
+                          (self.max_id + 1,))
         self.db.commit()
-        self.max_id = self.get_max_id()
+        
+        self.max_id = self.get_max_id() + 1
         self.close()
 
     def get_max_id(self):
