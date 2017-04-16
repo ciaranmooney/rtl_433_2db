@@ -14,17 +14,23 @@
 
 # import sys
 
+# TODO
+# Code not Python3 compliant! 
+# Currently a problem with JSON str/byte
+
 import subprocess
 import time
 import threading
-import Queue
+import queue as Queue
 import sqlite3 as sq
 import json
+from io import StringIO
 
 # BEGIN CONFIG
-DB_FILE = "/var/lib/temperaturedb/tempdb.sqlite"
+DB_FILE = "/tmp/tempdb.sqlite"
 RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
 DEBUG = True
+TESTS = "/home/ciaran/Code/rtl_433_tests/"
 # END CONFIG
 
 class asyncFileReader(threading.Thread):
@@ -63,7 +69,8 @@ class initDatabase(object):
     def __init__(self, sq, db_path):
         '''
         '''
-        self.db = sq.connect(db_path)
+        self.db_path = db_path
+        self.db = sq.connect(self.db_path)
         #except sq.OperationalError:
         #    print("No directory for database")
         
@@ -86,6 +93,8 @@ class initDatabase(object):
         self.db.commit()
         self.cur.execute('CREATE TABLE current_id (max_id int)')
         self.db.commit()
+        self.cur.execute('INSERT INTO current_id values (?)', (0,))
+        self.db.commit()
         self.close()
 
     def close(self):
@@ -97,8 +106,9 @@ class initDatabase(object):
         ''' Takes json_data and writes it to the sqlite database.
             Increments the max_id.
         '''
+        print(self.max_id)
         new_max_id = self.max_id + 1
-        self.cur.execute('''INSERT INTO sensor_data VALUES
+        self.cur.execute('''"INSERT INTO sensor_data VALUES
                           (?,?,?,?,?)", (new_max_id, datetime, data['id'],
                           data['temp'], data['io'])''')
         self.db.commit()
@@ -112,8 +122,10 @@ class initDatabase(object):
     def get_max_id(self):
         ''' Returns the (only) value in the current_id table.
         '''
+        self.db = sq.connect(self.db_path)
+        self.cur = self.db.cursor()
         self.cur.execute("SELECT * from current_id;")
-        return self.cur.fetchone
+        return self.cur.fetchone()[0]
 
 def startSubProcess(rtl_path, database, debug=False):
     ''' Example of how to consume standard output and standard error of
@@ -121,13 +133,13 @@ def startSubProcess(rtl_path, database, debug=False):
     '''
     if debug == False:
         command = [rtl_path, "-R", "39","-F", "json"]
-        print "\nStarting RTL433\n"
+        print("\nStarting RTL433\n")
 
     if debug == True:
-        # just run the test .sh file in rtl_tests
-        test_files = '/home/ciaran/Code/rtl_433_tests/tests/wg_pb12v1'
-        command = [rtl_path, "-R", "39","-F", "json"]
-        print "\nStarting RTL433 - Debug Mode\n"
+        # possibly better doing this with a test suite.
+        # cant just run the shell script because it doesn't output json
+        command = ['/home/ciaran/Code/rtl_433_tests/rtl_433_test.sh']
+        print("\nStarting RTL433 - Debug Mode\n")
     
     # Launch the command as subprocess.
     process = subprocess.Popen(command, 
@@ -151,14 +163,15 @@ def startSubProcess(rtl_path, database, debug=False):
         while not stdout_queue.empty():
             # Whilst we have data.
             line = stdout_queue.get()
-            print(repr(line))
+            print(line)
 
             while not stderr_queue.empty():
                 # Whilst we have no errors
                 line = stdout_queue.get()
-                data = json.loads(line)
+                print(line)
+                data = json.loads(line.decode("utf-8"))
                 database.write(data) # put data into sqlite database.
-        
+
             # Sleep a bit before asking the readers again.
             time.sleep(.1)
 
