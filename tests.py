@@ -17,12 +17,11 @@ class TestDatabaseInit(unittest.TestCase):
     def setUp(self):
         '''
         '''
-        self.sq_db = sq
         self.db_path = "/tmp/test_db.sqlite"
-        self.db = initDatabase(self.sq_db, self.db_path)
+        self.db = initDatabase(sq, self.db_path)
 
     def tearDown(self):
-        '''
+        ''' Deletes the database to make sure it doesn't confuse us.
         '''
         os.remove(self.db_path)
 
@@ -35,24 +34,33 @@ class TestDatabaseInit(unittest.TestCase):
                                             name='sensor_data';''')
         table = self.db.cur.fetchone()
         self.assertEqual(table, ('sensor_data',))
-        
+
+        self.db.cur.execute('''SELECT name FROM sqlite_master 
+                                            WHERE type='table' AND 
+                                            name='current_id';''')
+        table = self.db.cur.fetchone()
+        self.assertEqual(table, ('current_id',))
+    
     def test_init_table_headers(self):
         ''' Tests that when a database is initialised that the tables have the
             expected headers.
         '''
-        pass
+        self.db.cur.execute('''PRAGMA table_info('sensor_data');''')
+        headers = self.db.cur.fetchall()
+        self.assertEqual(headers[0][1], 'id')
+        self.assertEqual(headers[1][1], 'date')
+        self.assertEqual(headers[2][1], 'sensorID')
+        self.assertEqual(headers[3][1], 'temperature_C')
+        self.assertEqual(headers[4][1], 'io')
     
     def test_init_table_max_id(self):
         ''' Tests that when a database is initialised that the max ID is 
             correct. 
         '''
-        pass
-
-    def test_create_tables(self):
-        '''
-        '''
-        pass
-
+        self.db.cur.execute('''SELECT * FROM current_id;''')
+        table = self.db.cur.fetchone()
+        self.assertEqual(0, table[0])
+        
     def test_close(self):
         '''
         '''
