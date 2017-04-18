@@ -5,9 +5,15 @@
 # Ciarán Mooney 2017
 
 import unittest
-from rtl_433_2db import initDatabase
+from unittest import mock
+import rtl_433_2db
+
+from datetime import datetime
 import sqlite3 as sq
 import os
+
+def test():
+    pass
 
 class TestDatabaseInit(unittest.TestCase):
     ''' Tests that the database is created as expected and it's methods all
@@ -18,11 +24,13 @@ class TestDatabaseInit(unittest.TestCase):
         '''
         '''
         self.db_path = "/tmp/test_db.sqlite"
-        self.db = initDatabase(sq, self.db_path)
+        self.db = rtl_433_2db.initDatabase(sq, self.db_path)
+        self.db.connect()
 
     def tearDown(self):
         ''' Deletes the database to make sure it doesn't confuse us.
         '''
+        self.db.close()
         os.remove(self.db_path)
 
     def test_init_tables(self):
@@ -61,48 +69,83 @@ class TestDatabaseInit(unittest.TestCase):
         table = self.db.cur.fetchone()
         self.assertEqual(0, table[0])
         
-    def test_close(self):
+    @mock.patch.object(sq, 'connect')
+    def test_close(self, mock_connect):
         '''
         '''
-        # Candidate for mock.
-        self.assertTrue(False)
-    
-    def test_connect(self):
+        sqlite_connect_mock = mock.Mock()
+        mock_connect.return_value = sqlite_connect_mock
+        # Connect has to be called so that mock object is used. 
+        # Connect called previously in setUp, but this uses the original
+        # sqlite objecct.
+        self.db.connect()
+        self.db.close()
+        self.assertTrue(sqlite_connect_mock.close.called, True)
+   
+    @mock.patch.object(sq,'connect')
+    def test_connect(self, mock_method):
         '''
         '''
-        # Candidate for mock.
-        self.assertTrue(False)
+        self.db.close()
+        self.db.connect()
+        mock_method.assert_called_with(self.db_path)
 
     def test_write(self):
+        '''
+        '''
+        with mock.patch('rtl_433_2db.datetime') as mock_timestamp:
+            n = datetime.now()
+            mock_timestamp.now.return_value = n
+            mock_timestamp.side_effect = lambda * args, **kw: datetime.now(*args, **kw)
+            assert rtl_433_2db.datetime.now() == n
+
+            test_json = {"time" : "@0.000000s", "model" : "WG-PB12V1", 
+                         "id" : 8, "temperature_C" : 20.900, 
+                         "io" : "111111110011001001100001011010001111111101001100"}
+            
+            # Test that id starts at zero. 
+            self.db.cur.execute('''SELECT * FROM current_id;''')
+            table = self.db.cur.fetchone()
+            self.assertEqual(0, table[0])
+            
+            # Check that data is written.
+            self.db.write(test_json)
+            self.db.connect()
+            self.db.cur.execute("SELECT * FROM sensor_data")
+            data = self.db.cur.fetchall()[0]
+            self.assertEqual(data[0], 0)
+            self.assertEqual(data[1], str(n))
+            self.assertEqual(data[2], 8)
+            self.assertEqual(data[3], 20.9)
+            self.assertEqual(data[4], 
+                         '111111110011001001100001011010001111111101001100')
+
+            # Check that the id incremented.    
+            self.db.cur.execute('''SELECT * FROM current_id;''')
+            table = self.db.cur.fetchone()
+            self.assertEqual(1, table[0])
+        
+
+    def test_get_max_id(self):
         '''
         '''
         test_json = {"time" : "@0.000000s", "model" : "WG-PB12V1", 
                      "id" : 8, "temperature_C" : 20.900, 
                      "io" : "111111110011001001100001011010001111111101001100"}
-        
+            
+        # Test that id starts at zero. 
         self.db.cur.execute('''SELECT * FROM current_id;''')
         table = self.db.cur.fetchone()
         self.assertEqual(0, table[0])
-
+            
         self.db.write(test_json)
-        self.db.cur.execute("SELECT * FROM sensor_data")
-        data = self.db.cur.fetchall()
-        self.assertEqual(data[0][1], 0)
-        self.assertEqual(data[1][1], 'date')
-        self.assertEqual(data[2][1], 8)
-        self.assertEqual(data[3][1], 20.9)
-        self.assertEqual(data[4][1], '111111110011001001100001011010001111111101001100')
 
+        # Check that the id incremented.    
+        self.db.connect()
         self.db.cur.execute('''SELECT * FROM current_id;''')
         table = self.db.cur.fetchone()
         self.assertEqual(1, table[0])
         
-        self.assertTrue(False)
-
-    def test_max_id(self):
-        '''
-        '''
-        pass
 
 if __name__ == "__main__":
     unittest.main()

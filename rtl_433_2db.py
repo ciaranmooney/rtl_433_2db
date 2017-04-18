@@ -97,7 +97,7 @@ class initDatabase(object):
         self.close()
 
     def connect(self):
-        '''
+        ''' Re-wraps the sqlite3 database connect and cursor functions.
         '''
         self.db = self.sq.connect(self.db_path)
         self.cur = self.db.cursor()
