@@ -124,7 +124,6 @@ class TestDatabaseInit(unittest.TestCase):
             self.db.cur.execute('''SELECT * FROM current_id;''')
             table = self.db.cur.fetchone()
             self.assertEqual(1, table[0])
-        
 
     def test_get_max_id(self):
         '''
