@@ -26,7 +26,7 @@ from io import StringIO
 # BEGIN CONFIG
 DB_FILE = "/tmp/tempdb.sqlite"
 RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
-DEBUG = True
+DEBUG = False 
 TESTS = "/home/ciaran/Code/rtl_433_tests/"
 # END CONFIG
 
@@ -166,15 +166,13 @@ def startSubProcess(rtl_path, database, debug=False):
     stderr_reader.start()
    
     # do queue loop, entering data to database
-    # Check the queues if we received some output until there is nothing more to get.
+    # Check the queues if we received some output until there is nothing more 
+    # to get.
     
     while not stdout_reader.eof() or not stderr_reader.eof():
         # Show what we received from standard output.
         while not stdout_queue.empty():
             # Whilst we have data.
-            line = stdout_queue.get()
-            print(line)
-
             while not stderr_queue.empty():
                 # Whilst we have no errors
                 line = stdout_queue.get()
@@ -187,7 +185,7 @@ def startSubProcess(rtl_path, database, debug=False):
 
     # Let's be tidy and join the threads we've started.
     try:
-        db.close()
+        database.close()
     except:
         pass
 
