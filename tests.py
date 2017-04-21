@@ -5,7 +5,6 @@
 # Ciarán Mooney 2017
 
 import unittest
-<<<<<<< HEAD
 from unittest import mock
 import rtl_433_2db
 
@@ -13,15 +12,6 @@ from datetime import datetime
 import sqlite3 as sq
 import os
 
-def test():
-    pass
-
-=======
-from rtl_433_2db import initDatabase
-import sqlite3 as sq
-import os
-
->>>>>>> 948df8b15e1f25b98d32337ab3341e8f9758e2bc
 class TestDatabaseInit(unittest.TestCase):
     ''' Tests that the database is created as expected and it's methods all
         behave as expected.
@@ -31,20 +21,13 @@ class TestDatabaseInit(unittest.TestCase):
         '''
         '''
         self.db_path = "/tmp/test_db.sqlite"
-<<<<<<< HEAD
         self.db = rtl_433_2db.initDatabase(sq, self.db_path)
         self.db.connect()
-=======
-        self.db = initDatabase(sq, self.db_path)
->>>>>>> 948df8b15e1f25b98d32337ab3341e8f9758e2bc
 
     def tearDown(self):
         ''' Deletes the database to make sure it doesn't confuse us.
         '''
-<<<<<<< HEAD
         self.db.close()
-=======
->>>>>>> 948df8b15e1f25b98d32337ab3341e8f9758e2bc
         os.remove(self.db_path)
 
     def test_init_tables(self):
@@ -83,7 +66,6 @@ class TestDatabaseInit(unittest.TestCase):
         table = self.db.cur.fetchone()
         self.assertEqual(0, table[0])
         
-<<<<<<< HEAD
     @mock.patch.object(sq, 'connect')
     def test_close(self, mock_connect):
         '''
@@ -104,24 +86,10 @@ class TestDatabaseInit(unittest.TestCase):
         self.db.close()
         self.db.connect()
         mock_method.assert_called_with(self.db_path)
-=======
-    def test_close(self):
-        '''
-        '''
-        # Candidate for mock.
-        self.assertTrue(False)
-    
-    def test_connect(self):
-        '''
-        '''
-        # Candidate for mock.
-        self.assertTrue(False)
->>>>>>> 948df8b15e1f25b98d32337ab3341e8f9758e2bc
 
     def test_write(self):
         '''
         '''
-<<<<<<< HEAD
         with mock.patch('rtl_433_2db.datetime') as mock_timestamp:
             n = datetime.now()
             mock_timestamp.now.return_value = n
@@ -170,39 +138,10 @@ class TestDatabaseInit(unittest.TestCase):
 
         # Check that the id incremented.    
         self.db.connect()
-=======
-        test_json = {"time" : "@0.000000s", "model" : "WG-PB12V1", 
-                     "id" : 8, "temperature_C" : 20.900, 
-                     "io" : "111111110011001001100001011010001111111101001100"}
-        
-        self.db.cur.execute('''SELECT * FROM current_id;''')
-        table = self.db.cur.fetchone()
-        self.assertEqual(0, table[0])
-
-        self.db.write(test_json)
-        self.db.cur.execute("SELECT * FROM sensor_data")
-        data = self.db.cur.fetchall()
-        self.assertEqual(data[0][1], 0)
-        self.assertEqual(data[1][1], 'date')
-        self.assertEqual(data[2][1], 8)
-        self.assertEqual(data[3][1], 20.9)
-        self.assertEqual(data[4][1], '111111110011001001100001011010001111111101001100')
-
->>>>>>> 948df8b15e1f25b98d32337ab3341e8f9758e2bc
         self.db.cur.execute('''SELECT * FROM current_id;''')
         table = self.db.cur.fetchone()
         self.assertEqual(1, table[0])
         
-<<<<<<< HEAD
-=======
-        self.assertTrue(False)
-
-    def test_max_id(self):
-        '''
-        '''
-        pass
->>>>>>> 948df8b15e1f25b98d32337ab3341e8f9758e2bc
-
 if __name__ == "__main__":
     unittest.main()
 
