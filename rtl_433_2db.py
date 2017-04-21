@@ -106,7 +106,7 @@ class initDatabase(object):
         ''' Re-wraps the sqlite3 database closure function.
         '''
         self.db.close()
-        
+    
     def write(self, json_data):
         ''' Takes json_data and writes it to the sqlite database.
             Increments the max_id.
