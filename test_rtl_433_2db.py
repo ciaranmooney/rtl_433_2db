@@ -142,6 +142,13 @@ class TestDatabaseInit(unittest.TestCase):
         table = self.db.cur.fetchone()
         self.assertEqual(1, table[0])
 
+    def testNewMaxID(self):
+        ''' 
+        '''
+        
+        self.assertTrue(False)
+
+
 class TestRTL433recordings(unittest.TestCase):
     ''' Tests that the correct data is stored when the recordings from
         RTL 433 tests are used for the WG-PB12v1

@@ -73,7 +73,8 @@ class initDatabase(object):
         #    print("No directory for database")
         
         table_exists = self.cur.execute('''SELECT name FROM sqlite_master 
-                                    WHERE type='table' AND name='sensor_data';''')
+                                    WHERE type='table' 
+                                    AND name='sensor_data';''')
         table_exists = self.cur.fetchone()
         self.close()
 
@@ -121,11 +122,13 @@ class initDatabase(object):
         self.cur.execute("DELETE from current_id WHERE max_id = ?", 
                           (self.max_id,))
         self.db.commit()
+        # XXX Remove increment from write. Move to get_max_id.
         self.cur.execute("INSERT INTO current_id values (?)", 
                           (self.max_id + 1,))
         self.db.commit()
         self.close()
 
+        # XXX Remove increment from write. Move to get_max_id.
         self.max_id = self.get_max_id() + 1
 
     def get_max_id(self):
@@ -136,6 +139,12 @@ class initDatabase(object):
         max_id =  self.cur.fetchone()[0]
         self.close()
         return max_id
+
+    def next_max_id(self):
+        ''' Returns the next max ID
+        '''
+
+        pass
 
 def startSubProcess(rtl_path, database, debug=False):
     ''' Example of how to consume standard output and standard error of
