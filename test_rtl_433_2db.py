@@ -149,12 +149,29 @@ class TestDatabaseInit(unittest.TestCase):
         self.assertTrue(False)
 
 
+class TestAsyncFileReader(unittest.TestCase):
+    ''' Tests the asyncFileReaderClass.
+    '''
+
+    @mock.patch('output_file')
+    @mock.patch('queue_class')
+    @mock.patch('process_out')
+    def testInit(self, mock_processOut, mock_queueClass, mock_outputFile):
+        '''
+        '''
+        test_queue = rtl_433_2db.asyncFileReader(mock_processOut, mock_queueClass,
+                                                    mock_outputFile)
+        #push data into filereader - somehow.
+        test_queue.run()
+        #check that queu now contains data
+        #check that output file now contains data
+
 class TestRTL433recordings(unittest.TestCase):
     ''' Tests that the correct data is stored when the recordings from
         RTL 433 tests are used for the WG-PB12v1
     '''
 
-    def init(self):
+    def setUp(self):
         '''
         '''
 
