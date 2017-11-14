@@ -6,11 +6,15 @@
 
 import unittest
 import unittest.mock as mock
-import rtl_433_2db
 
 from datetime import datetime
 import sqlite3 as sq
 import os
+
+import queue as Queue
+
+import rtl_433_2db
+
 
 class TestDatabaseInit(unittest.TestCase):
     ''' Tests that the database is created as expected and it's methods all
@@ -153,14 +157,18 @@ class TestAsyncFileReader(unittest.TestCase):
     ''' Tests the asyncFileReaderClass.
     '''
 
-    @mock.patch('output_file')
-    @mock.patch('queue_class')
-    @mock.patch('process_out')
-    def testInit(self, mock_processOut, mock_queueClass, mock_outputFile):
+    def setUp(self):
         '''
         '''
-        test_queue = rtl_433_2db.asyncFileReader(mock_processOut, mock_queueClass,
-                                                    mock_outputFile)
+
+        pass
+
+    def testInit(self):
+        '''
+        '''
+        mock_processOut = mock.Mock()
+        mock_queueClass = mock.Mock(spec=Queue.Queue())
+        test_queue = rtl_433_2db.asyncFileReader(mock_processOut, mock_queueClass)
         #push data into filereader - somehow.
         test_queue.run()
         #check that queu now contains data
