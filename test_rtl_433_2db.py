@@ -167,6 +167,7 @@ class TestAsyncFileReader(unittest.TestCase):
         '''
         '''
         mock_processOut = mock.Mock()
+        mock_processOut.readline = mock.Mock(return_value=(['hello, world','']))
         mock_queueClass = mock.Mock(spec=Queue.Queue())
         test_queue = rtl_433_2db.asyncFileReader(mock_processOut, mock_queueClass)
         #push data into filereader - somehow.

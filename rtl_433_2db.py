@@ -47,6 +47,7 @@ class asyncFileReader(threading.Thread):
         ''' The body of the tread: read lines and put them on the queue.
         '''
         for line in iter(self._fd.readline, ''):
+            print(line)
             self._queue.put(line)
 
     def eof(self):
