@@ -24,6 +24,8 @@ class TestDatabaseInit(unittest.TestCase):
     def setUp(self):
         '''
         '''
+        # XXX delete any existing database before continuing!
+        self.assertTrue(False)
         self.db_path = "/tmp/test_db.sqlite"
         self.db = rtl_433_2db.initDatabase(sq, self.db_path)
         self.db.connect()
@@ -164,16 +166,33 @@ class TestAsyncFileReader(unittest.TestCase):
         pass
 
     def testInit(self):
-        '''
+        ''' Tests that when asyncFileReader is passed data that it is written
+            to the log file.
         '''
         mock_processOut = mock.Mock()
-        mock_processOut.readline = mock.Mock(return_value=(['hello, world','']))
+        mock_processOut.readline.side_effect=['hello', 'world','','foo']
         mock_queueClass = mock.Mock(spec=Queue.Queue())
         test_queue = rtl_433_2db.asyncFileReader(mock_processOut, mock_queueClass)
-        #push data into filereader - somehow.
+        
         test_queue.run()
-        #check that queu now contains data
+        print(test_queue._queue.put.call_args_list)
+        print(test_queue._queue.put.call_args_list == ['hello', 'world'])
+        print(test_queue._queue.put.call_args)
+        self.assertEqual(test_queue._queue.put.call_args_list, 
+                            [call('hello'), call('world')])
+
+        test_queue._queue.put.assert_has_calls(call('hello'),call('world'))
+        self.assertTrue(test_queue._queue.put.assert_called_with('world'))
+        self.assertTrue(test_queue._queue.put.assert_called_with('hello'))
+
+        self.assertTrue(False)
+
+    def testIncorrectRTLdata(self):
+        '''
+        '''
+
         #check that output file now contains data
+        pass
 
 class TestRTL433recordings(unittest.TestCase):
     ''' Tests that the correct data is stored when the recordings from
