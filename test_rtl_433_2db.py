@@ -5,7 +5,8 @@
 # Ciarán Mooney 2017
 
 import unittest
-import unittest.mock as mock
+from unittest.mock import Mock
+from unittest.mock import patch
 
 from datetime import datetime
 import sqlite3 as sq
@@ -72,11 +73,11 @@ class TestDatabaseInit(unittest.TestCase):
         table = self.db.cur.fetchone()
         self.assertEqual(0, table[0])
         
-    @mock.patch.object(sq, 'connect')
+    @patch.object(sq, 'connect')
     def test_close(self, mock_connect):
         '''
         '''
-        sqlite_connect_mock = mock.Mock()
+        sqlite_connect_mock = Mock()
         mock_connect.return_value = sqlite_connect_mock
         # Connect has to be called so that mock object is used. 
         # Connect called previously in setUp, but this uses the original
@@ -85,7 +86,7 @@ class TestDatabaseInit(unittest.TestCase):
         self.db.close()
         self.assertTrue(sqlite_connect_mock.close.called, True)
    
-    @mock.patch.object(sq,'connect')
+    @patch.object(sq,'connect')
     def test_connect(self, mock_method):
         '''
         '''
@@ -169,21 +170,22 @@ class TestAsyncFileReader(unittest.TestCase):
         ''' Tests that when asyncFileReader is passed data that it is written
             to the log file.
         '''
-        mock_processOut = mock.Mock()
+        mock_processOut = Mock()
         mock_processOut.readline.side_effect=['hello', 'world','','foo']
-        mock_queueClass = mock.Mock(spec=Queue.Queue())
+        mock_queueClass = Mock(spec=Queue.Queue())
         test_queue = rtl_433_2db.asyncFileReader(mock_processOut, mock_queueClass)
         
         test_queue.run()
         print(test_queue._queue.put.call_args_list)
-        print(test_queue._queue.put.call_args_list == ['hello', 'world'])
-        print(test_queue._queue.put.call_args)
-        self.assertEqual(test_queue._queue.put.call_args_list, 
-                            [call('hello'), call('world')])
-
-        test_queue._queue.put.assert_has_calls(call('hello'),call('world'))
-        self.assertTrue(test_queue._queue.put.assert_called_with('world'))
-        self.assertTrue(test_queue._queue.put.assert_called_with('hello'))
+        print(test_queue._queue.put.call_args_list == [('hello',), ('world',)])
+        print(test_queue._queue.put.call_args_list[0][0] == ('hello',))
+        print(test_queue._queue.put.call_args_list[1][0] == ('world',))
+        b = []
+        b.append(test_queue._queue.put.call_args_list[0][0])
+        b.append(test_queue._queue.put.call_args_list[1][0])
+        print(b)
+        print(b == [('hello',), ('world',)])
+        self.assertEqual(test_queue._queue.put.call_args_list, [('hello',), ('world',)])
 
         self.assertTrue(False)
 
