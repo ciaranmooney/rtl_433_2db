@@ -7,15 +7,36 @@
 import unittest
 from unittest.mock import Mock
 from unittest.mock import patch
+from unittest.mock import mock_open
 
 from datetime import datetime
 import sqlite3 as sq
 import os
 
 import queue as Queue
+from json.decoder import JSONDecodeError
 
 import rtl_433_2db
 
+class CallableExhausted(Exception):
+    '''
+    '''
+    pass
+
+class ErrorAfter(object):
+    ''' Callable that will raise `CallableExhausted`
+        exception after `limit` calls
+    '''
+
+    def __init__(self, limit):
+        self.limit = limit
+        self.calls = 0
+
+    def __call__(self):
+        self.calls += 1
+        if self.calls > self.limit:
+            raise CallableExhausted
+        return False 
 
 class TestDatabaseInit(unittest.TestCase):
     ''' Tests that the database is created as expected and it's methods all
@@ -25,8 +46,13 @@ class TestDatabaseInit(unittest.TestCase):
     def setUp(self):
         '''
         '''
-        # XXX delete any existing database before continuing!
-        self.assertTrue(False)
+        db_path = '/tmp/test_db.sqlite'
+        try:
+            os.remove(db_path)
+        except FileNotFoundError:
+            # Not a problem.
+            pass
+
         self.db_path = "/tmp/test_db.sqlite"
         self.db = rtl_433_2db.initDatabase(sq, self.db_path)
         self.db.connect()
@@ -97,7 +123,7 @@ class TestDatabaseInit(unittest.TestCase):
     def test_write(self):
         '''
         '''
-        with mock.patch('rtl_433_2db.datetime') as mock_timestamp:
+        with patch('rtl_433_2db.datetime') as mock_timestamp:
             n = datetime.now()
             mock_timestamp.now.return_value = n
             mock_timestamp.side_effect = lambda * args, **kw: datetime.now(*args, **kw)
@@ -164,38 +190,40 @@ class TestAsyncFileReader(unittest.TestCase):
         '''
         '''
 
-        pass
+        self.mock_processOut = Mock()
+        self.mock_queueClass = Mock(spec=Queue.Queue())
+        self.test_queue = rtl_433_2db.asyncFileReader(self.mock_processOut, 
+                                                        self.mock_queueClass)
 
     def testInit(self):
         ''' Tests that when asyncFileReader is passed data that it is written
             to the log file.
         '''
-        mock_processOut = Mock()
-        mock_processOut.readline.side_effect=['hello', 'world','','foo']
-        mock_queueClass = Mock(spec=Queue.Queue())
-        test_queue = rtl_433_2db.asyncFileReader(mock_processOut, mock_queueClass)
         
+        self.mock_processOut.readline.side_effect=['hello', 'world','','foo']
+        self.test_queue.run()
+        not_expected = [(('hello',),), (('world',),), (('',),), (('foo',),)]
+        self.assertNotEqual(self.test_queue._queue.put.call_args_list, not_expected)
+        expected = [(('hello',),), (('world',),)]
+        self.assertEqual(self.test_queue._queue.put.call_args_list, expected)
+
+    @patch('builtins.open')
+    def testRTLDataLogged(self, m_open):
+        ''' Check that when a log file is specified that it actually calls
+            file.write() with data.
+        '''
+
+        mock_processOut = Mock()
+        mock_queueClass = Mock(spec=Queue.Queue())
+        test_queue = rtl_433_2db.asyncFileReader(mock_processOut, mock_queueClass,
+                                                    log_file='/tmp/test.tmp')
+        mock_processOut.readline.side_effect=['hello', 'world','','foo']
         test_queue.run()
-        print(test_queue._queue.put.call_args_list)
-        print(test_queue._queue.put.call_args_list == [('hello',), ('world',)])
-        print(test_queue._queue.put.call_args_list[0][0] == ('hello',))
-        print(test_queue._queue.put.call_args_list[1][0] == ('world',))
-        b = []
-        b.append(test_queue._queue.put.call_args_list[0][0])
-        b.append(test_queue._queue.put.call_args_list[1][0])
-        print(b)
-        print(b == [('hello',), ('world',)])
-        self.assertEqual(test_queue._queue.put.call_args_list, [('hello',), ('world',)])
-
-        self.assertTrue(False)
-
-    def testIncorrectRTLdata(self):
-        '''
-        '''
-
-        #check that output file now contains data
-        pass
-
+        m_open.assert_called_with('/tmp/test.tmp', 'w')
+        handle = m_open().__enter__()
+        expected = [(('hello',),), (('world',),)]
+        self.assertEqual(handle.write.call_args_list, expected)
+        
 class TestRTL433recordings(unittest.TestCase):
     ''' Tests that the correct data is stored when the recordings from
         RTL 433 tests are used for the WG-PB12v1
@@ -204,18 +232,58 @@ class TestRTL433recordings(unittest.TestCase):
     def setUp(self):
         '''
         '''
-
         pass
 
 class TestRTL433Errors(unittest.TestCase):
     '''
     '''
 
-    def init(self):
+    @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(2))
+    @patch.object(Queue.Queue, 'get')
+    def testBlankResponse(self, mock_get, mock_empty):
+        ''' Sends a blank ('') response from rtl_433 to rtl_433_2db.
         '''
+        
+        DB_FILE = "/tmp/tempdb.sqlite"
+        RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
+        DEBUG = False
+      
+        empty_string = ''.encode()
+        mock_get.return_value = empty_string
+        db = rtl_433_2db.initDatabase(sq, DB_FILE)
+        try:
+            rtl_433_2db.startSubProcess(RTL433, db, DEBUG)
+        except CallableExhausted:
+            # To catch the error thown by second loop
+            pass
+
+    @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(4))
+    @patch.object(Queue.Queue, 'get')
+    def testGoodBadGoodResponse(self, mock_get, mock_empty):
+        ''' Sends a "good" RTL_433 response, then a "bad" (blank) response, 
+            then good again.
+
+            Test should continue without any faults.
         '''
 
-        pass
+        DB_FILE = "/tmp/tempdb.sqlite"
+        RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
+        DEBUG = False 
+
+        empty_string = ''.encode()
+        good_string = ('{"time" : "@0.000000s",'
+                       ' "model" : "WG-PB12V1",'
+                       ' "id" : 8,'
+                       ' "temperature_C" : 20.900,'
+                       ' "io" : "111111110011001001100001011010001111111101001100"}').encode()
+        mock_get.side_effect = [good_string, empty_string, good_string]
+        db = rtl_433_2db.initDatabase(sq, DB_FILE)
+        try:
+            rtl_433_2db.startSubProcess(RTL433, db, DEBUG)
+        except CallableExhausted:
+            # To catch the error thrown by third loop, see ErrorAfter()
+            pass
+
 
 if __name__ == "__main__":
     unittest.main()

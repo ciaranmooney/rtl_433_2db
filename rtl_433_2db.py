@@ -36,18 +36,23 @@ class asyncFileReader(threading.Thread):
         be consumed in another thread.
     '''
 
-    def __init__(self, fd, queue):
+    def __init__(self, fd, queue, log_file=None):
         assert isinstance(queue, Queue.Queue)
         assert callable(fd.readline)
         threading.Thread.__init__(self)
         self._fd = fd
         self._queue = queue
+        self._log = log_file
 
     def run(self):
         ''' The body of the tread: read lines and put them on the queue.
         '''
         for line in iter(self._fd.readline, ''):
-            print(line)
+            if self._log != None:
+                with open(self._log, 'w') as log:
+                    log.write(line)
+                    log.close()
+
             self._queue.put(line)
 
     def eof(self):
@@ -186,12 +191,15 @@ def startSubProcess(rtl_path, database, debug=False):
             while not stderr_queue.empty():
                 # Whilst we have no errors
                 line = stdout_queue.get()
-                print(line)
-                data = json.loads(line.decode("utf-8"))
-                database.write(data) # put data into sqlite database.
+                try:
+                    data = json.loads(line.decode("utf-8"))
+                    database.write(data) # put data into sqlite database.
+                except json.decoder.JSONDecodeError:
+                    # Garbled data from RTL_433
+                    pass
 
             # Sleep a bit before asking the readers again.
-            time.sleep(.1)
+            time.sleep(15)
 
     # Let's be tidy and join the threads we've started.
     try:
