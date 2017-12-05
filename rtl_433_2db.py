@@ -1,4 +1,4 @@
-#! /usr/bin/env python 
+#! /usr/bin/env python3 
 # -*- coding: utf-8 -*-
 
 # A script that runs rtl_433 and logs the json results to an sqlite database.
@@ -10,9 +10,6 @@
 
 # Notes 
 # * The "model" field in the JSON output is the device name
-
-# XXX
-# * Code not Python3 compliant! 
 
 import subprocess
 from datetime import datetime
