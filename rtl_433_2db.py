@@ -1,4 +1,4 @@
-#! /usr/bin/env python 
+#! /usr/bin/env python3 
 # -*- coding: utf-8 -*-
 
 # A script that runs rtl_433 and logs the json results to an sqlite database.
@@ -10,10 +10,6 @@
 
 # Notes 
 # * The "model" field in the JSON output is the device name
-
-# XXX
-# * Code not Python3 compliant! 
-# * Currently a problem with JSON str/byte
 
 import subprocess
 from datetime import datetime
@@ -184,16 +180,14 @@ def startSubProcess(rtl_path, database, debug=False):
     # Check the queues if we received some output until there is nothing more 
     # to get.
     
-    while not stdout_reader.eof() or not stderr_reader.eof():
+    while not stdout_reader.eof() or not stderr_reader.eof(): 
         # Show what we received from standard output.
-        while not stdout_queue.empty():
-            # Whilst we have data.
-            while not stderr_queue.empty():
-                # Whilst we have no errors
+        while not stdout_queue.empty():     # Whilst we have data.
+            while not stderr_queue.empty(): # Whilst we have no errors
                 line = stdout_queue.get()
                 try:
                     data = json.loads(line.decode("utf-8"))
-                    database.write(data) # put data into sqlite database.
+                    database.write(data) 
                 except json.decoder.JSONDecodeError:
                     # Garbled data from RTL_433
                     pass
