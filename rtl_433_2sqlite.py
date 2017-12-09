@@ -206,8 +206,3 @@ def startSubProcess(rtl_path, database, debug=False):
     # Close subprocess' file descriptors.
     process.stdout.close()
     process.stderr.close()
-
-if __name__ == '__main__':
-    db = initDatabase(sq, DB_FILE)
-    startSubProcess(RTL433, db, DEBUG)
-    print("Closing down")
