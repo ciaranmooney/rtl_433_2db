@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Tests for the rtl_433_2db.py
+# Tests for the rtl_433_2sqlite.py
 # Ciarán Mooney 2017
 
 import unittest
@@ -16,7 +16,7 @@ import os
 import queue as Queue
 from json.decoder import JSONDecodeError
 
-import rtl_433_2db
+import rtl_433_2sqlite
 
 class CallableExhausted(Exception):
     '''
@@ -54,7 +54,7 @@ class TestDatabaseInit(unittest.TestCase):
             pass
 
         self.db_path = "/tmp/test_db.sqlite"
-        self.db = rtl_433_2db.initDatabase(sq, self.db_path)
+        self.db = rtl_433_2sqlite.initDatabase(sq, self.db_path)
         self.db.connect()
 
     def tearDown(self):
@@ -123,11 +123,11 @@ class TestDatabaseInit(unittest.TestCase):
     def test_write(self):
         '''
         '''
-        with patch('rtl_433_2db.datetime') as mock_timestamp:
+        with patch('rtl_433_2sqlite.datetime') as mock_timestamp:
             n = datetime.now()
             mock_timestamp.now.return_value = n
             mock_timestamp.side_effect = lambda * args, **kw: datetime.now(*args, **kw)
-            assert rtl_433_2db.datetime.now() == n
+            assert rtl_433_2sqlite.datetime.now() == n
 
             test_json = {"time" : "@0.000000s", "model" : "WG-PB12V1", 
                          "id" : 8, "temperature_C" : 20.900, 
@@ -192,7 +192,7 @@ class TestAsyncFileReader(unittest.TestCase):
 
         self.mock_processOut = Mock()
         self.mock_queueClass = Mock(spec=Queue.Queue())
-        self.test_queue = rtl_433_2db.asyncFileReader(self.mock_processOut, 
+        self.test_queue = rtl_433_2sqlite.asyncFileReader(self.mock_processOut, 
                                                         self.mock_queueClass)
 
     def testInit(self):
@@ -215,7 +215,7 @@ class TestAsyncFileReader(unittest.TestCase):
 
         mock_processOut = Mock()
         mock_queueClass = Mock(spec=Queue.Queue())
-        test_queue = rtl_433_2db.asyncFileReader(mock_processOut, mock_queueClass,
+        test_queue = rtl_433_2sqlite.asyncFileReader(mock_processOut, mock_queueClass,
                                                     log_file='/tmp/test.tmp')
         mock_processOut.readline.side_effect=['hello', 'world','','foo']
         test_queue.run()
@@ -241,7 +241,7 @@ class TestRTL433Errors(unittest.TestCase):
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(2))
     @patch.object(Queue.Queue, 'get')
     def testBlankResponse(self, mock_get, mock_empty):
-        ''' Sends a blank ('') response from rtl_433 to rtl_433_2db.
+        ''' Sends a blank ('') response from rtl_433 to rtl_433_2sqlite.
         '''
         
         DB_FILE = "/tmp/tempdb.sqlite"
@@ -250,9 +250,9 @@ class TestRTL433Errors(unittest.TestCase):
       
         empty_string = ''.encode()
         mock_get.return_value = empty_string
-        db = rtl_433_2db.initDatabase(sq, DB_FILE)
+        db = rtl_433_2sqlite.initDatabase(sq, DB_FILE)
         try:
-            rtl_433_2db.startSubProcess(RTL433, db, DEBUG)
+            rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
         except CallableExhausted:
             # To catch the error thown by second loop
             pass
@@ -277,9 +277,9 @@ class TestRTL433Errors(unittest.TestCase):
                        ' "temperature_C" : 20.900,'
                        ' "io" : "111111110011001001100001011010001111111101001100"}').encode()
         mock_get.side_effect = [good_string, empty_string, good_string]
-        db = rtl_433_2db.initDatabase(sq, DB_FILE)
+        db = rtl_433_2sqlite.initDatabase(sq, DB_FILE)
         try:
-            rtl_433_2db.startSubProcess(RTL433, db, DEBUG)
+            rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
         except CallableExhausted:
             # To catch the error thrown by third loop, see ErrorAfter()
             pass

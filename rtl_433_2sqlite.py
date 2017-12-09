@@ -17,7 +17,6 @@ import threading
 import queue as Queue
 import sqlite3 as sq
 import json
-from io import StringIO
 
 # BEGIN CONFIG
 DB_FILE = "/tmp/tempdb.sqlite"
