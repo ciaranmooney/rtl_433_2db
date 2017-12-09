@@ -18,13 +18,6 @@ import queue as Queue
 import sqlite3 as sq
 import json
 
-# BEGIN CONFIG
-DB_FILE = "/tmp/tempdb.sqlite"
-RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
-DEBUG = False 
-TESTS = "/home/ciaran/Code/rtl_433_tests/"
-# END CONFIG
-
 class asyncFileReader(threading.Thread):
     ''' Helper class to implement asynchronous reading of a file
         in a separate thread. Pushes read lines on a queue to
@@ -147,7 +140,6 @@ class initDatabase(object):
 
         pass
 
-def startSubProcess(rtl_path, database, debug=False):
     ''' Example of how to consume standard output and standard error of
         a subprocess asynchronously without risk on deadlocking.
     '''
@@ -207,7 +199,3 @@ def startSubProcess(rtl_path, database, debug=False):
     process.stdout.close()
     process.stderr.close()
 
-if __name__ == '__main__':
-    db = initDatabase(sq, DB_FILE)
-    startSubProcess(RTL433, db, DEBUG)
-    print("Closing down")
