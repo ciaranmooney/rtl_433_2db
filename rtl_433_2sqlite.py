@@ -17,13 +17,8 @@ import threading
 import queue as Queue
 import sqlite3 as sq
 import json
-
-# BEGIN CONFIG
-DB_FILE = "/tmp/tempdb.sqlite"
-RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
-DEBUG = False 
-TESTS = "/home/ciaran/Code/rtl_433_tests/"
-# END CONFIG
+import os
+import sys
 
 class asyncFileReader(threading.Thread):
     ''' Helper class to implement asynchronous reading of a file
@@ -147,10 +142,28 @@ class initDatabase(object):
 
         pass
 
-def startSubProcess(rtl_path, database, debug=False):
+def createPID(PIDFILE):
+    ''' Creates a temporary PID file to track if processing is running.
+    '''
+    pid = str(os.getpid())
+    pidfile = PIDFILE 
+
+    if os.path.isfile(pidfile):
+        raise alreadyRunning    
+    open(pidfile, 'w').write(pid)
+
+def deletePID(PIDFILE):
+    '''
+    '''
+    os.unlink(PIDFILE)
+
+def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqlite.pid'):
     ''' Example of how to consume standard output and standard error of
         a subprocess asynchronously without risk on deadlocking.
     '''
+
+    createPID(PIDFILE)
+
     if debug == False:
         command = [rtl_path, "-R", "39","-F", "json"]
         print("\nStarting RTL433\n")
@@ -206,3 +219,5 @@ def startSubProcess(rtl_path, database, debug=False):
     # Close subprocess' file descriptors.
     process.stdout.close()
     process.stderr.close()
+
+    deletePID(PIDFILE)

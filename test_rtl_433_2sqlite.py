@@ -12,6 +12,7 @@ from unittest.mock import mock_open
 from datetime import datetime
 import sqlite3 as sq
 import os
+import sys
 
 import queue as Queue
 from json.decoder import JSONDecodeError

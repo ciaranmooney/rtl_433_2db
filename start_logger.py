@@ -5,8 +5,8 @@
 # RTL_433
 # Ciarán Mooney 2017
 
-import rtl_433_2sqlite as 2sqlite
-
+import rtl_433_2sqlite as to_sqlite # cannot have 2sqlite, invalid syntax
+import sqlite3 as sq
 
 # BEGIN CONFIG
 DB_FILE = "/tmp/tempdb.sqlite"
@@ -16,6 +16,6 @@ TESTS = "/home/ciaran/Code/rtl_433_tests/"
 # END CONFIG
 
 if __name__ == '__main__':
-    db = 2sqlite.initDatabase(sq, DB_FILE)
-    2sqlite.startSubProcess(RTL433, db, DEBUG)
+    db = to_sqlite.initDatabase(sq, DB_FILE)
+    to_sqlite.startSubProcess(RTL433, db, DEBUG)
     print("Closing down")
