@@ -12,7 +12,6 @@ from unittest.mock import mock_open
 from datetime import datetime
 import sqlite3 as sq
 import os
-import sys
 
 import queue as Queue
 from json.decoder import JSONDecodeError
@@ -179,9 +178,24 @@ class TestDatabaseInit(unittest.TestCase):
     def testNewMaxID(self):
         ''' 
         '''
-        
         self.assertTrue(False)
 
+    def testPID(self):
+        ''' Checks that a file with the correct PID is created.
+        '''
+        self.assertTrue(False)
+
+    def testRunning(self):
+        ''' Creates two processes and checks than error is raised.
+        '''
+        self.assertTrue(False)
+
+    def testRunningAfterCrash(self):
+        ''' Tests that when a process crashes, leaving a PID file in /tmp that
+            the script checks the PID, replaces the pid in the PID file and 
+            starts running.
+        '''
+        self.assertTrue(False)
 
 class TestAsyncFileReader(unittest.TestCase):
     ''' Tests the asyncFileReaderClass.
@@ -239,6 +253,16 @@ class TestRTL433Errors(unittest.TestCase):
     '''
     '''
 
+    def setUp(self):
+        '''
+        '''
+        pass
+
+    def tearDown(self):
+        '''
+        '''
+        os.unlink('/tmp/rtl_433_2sqlite.pid')
+   
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(2))
     @patch.object(Queue.Queue, 'get')
     def testBlankResponse(self, mock_get, mock_empty):
@@ -284,7 +308,6 @@ class TestRTL433Errors(unittest.TestCase):
         except CallableExhausted:
             # To catch the error thrown by third loop, see ErrorAfter()
             pass
-
 
 if __name__ == "__main__":
     unittest.main()

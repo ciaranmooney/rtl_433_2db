@@ -150,7 +150,10 @@ def createPID(PIDFILE):
 
     if os.path.isfile(pidfile):
         raise alreadyRunning    
-    open(pidfile, 'w').write(pid)
+    f = open(pidfile, 'w')
+    f.write(pid)
+    f.close()
+
 
 def deletePID(PIDFILE):
     '''
@@ -191,6 +194,13 @@ def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqli
     # do queue loop, entering data to database
     # Check the queues if we received some output until there is nothing more 
     # to get.
+   
+    # print(stderr_queue.empty())
+    # print(stderr_queue.get())
+    # print(stderr_queue.get())
+    # print(stderr_queue.get())
+    # print(stderr_reader.eof())
+    # print(stderr_queue.empty())
     
     while not stdout_reader.eof() or not stderr_reader.eof(): 
         # Show what we received from standard output.
