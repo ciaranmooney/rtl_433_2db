@@ -19,6 +19,7 @@ import sqlite3 as sq
 import json
 import os
 import sys
+import time
 
 class asyncFileReader(threading.Thread):
     ''' Helper class to implement asynchronous reading of a file
@@ -204,28 +205,37 @@ def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqli
     
     while not stdout_reader.eof() or not stderr_reader.eof(): 
         # Show what we received from standard output.
+        print('a')
         while not stdout_queue.empty():     # Whilst we have data.
+            print('b')
             while not stderr_queue.empty(): # Whilst we have no errors
+                print('Starting loop')
                 line = stdout_queue.get()
                 try:
                     data = json.loads(line.decode("utf-8"))
                     database.write(data) 
                 except json.decoder.JSONDecodeError:
                     # Garbled data from RTL_433
-                    pass
+                    print('Garbeled data')
 
             # Sleep a bit before asking the readers again.
+            print('Starting sleeping')
             time.sleep(15)
-
+            print('Finished sleeping')
+    
+    print('Finished looping')
     # Let's be tidy and join the threads we've started.
     try:
+        print('Trying to close DB')
         database.close()
     except:
-        pass
+        print('Failed to close DB')
 
+    print('Tying threads')
     stdout_reader.join()
     stderr_reader.join()
 
+    print('Closing subprocessses')
     # Close subprocess' file descriptors.
     process.stdout.close()
     process.stderr.close()

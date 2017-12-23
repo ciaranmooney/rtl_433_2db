@@ -35,7 +35,8 @@ class ErrorAfter(object):
     def __call__(self):
         self.calls += 1
         if self.calls > self.limit:
-            raise CallableExhausted
+            #raise CallableExhausted
+            return True
         return False 
 
 class TestDatabaseInit(unittest.TestCase):
@@ -268,7 +269,8 @@ class TestRTL433Errors(unittest.TestCase):
     def testBlankResponse(self, mock_get, mock_empty):
         ''' Sends a blank ('') response from rtl_433 to rtl_433_2sqlite.
         '''
-        
+        print('Test1')
+     #   self.assertTrue(False)
         DB_FILE = "/tmp/tempdb.sqlite"
         RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
         DEBUG = False
@@ -280,7 +282,7 @@ class TestRTL433Errors(unittest.TestCase):
             rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
         except CallableExhausted:
             # To catch the error thown by second loop
-            pass
+            print('Error\'d')
 
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(4))
     @patch.object(Queue.Queue, 'get')
@@ -290,11 +292,11 @@ class TestRTL433Errors(unittest.TestCase):
 
             Test should continue without any faults.
         '''
-
+        print('Test2')
         DB_FILE = "/tmp/tempdb.sqlite"
         RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
         DEBUG = False 
-
+        self.assertTrue(False)
         empty_string = ''.encode()
         good_string = ('{"time" : "@0.000000s",'
                        ' "model" : "WG-PB12V1",'
@@ -308,6 +310,7 @@ class TestRTL433Errors(unittest.TestCase):
         except CallableExhausted:
             # To catch the error thrown by third loop, see ErrorAfter()
             pass
+
 
 if __name__ == "__main__":
     unittest.main()
