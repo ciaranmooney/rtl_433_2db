@@ -12,6 +12,7 @@ from unittest.mock import mock_open
 from datetime import datetime
 import sqlite3 as sq
 import os
+import psutil
 
 import queue as Queue
 from json.decoder import JSONDecodeError
@@ -251,22 +252,37 @@ class TestRTL433recordings(unittest.TestCase):
         pass
 
 class TestRTL433Errors(unittest.TestCase):
-    '''
+    ''' Test that checks that rtl_433_2sqlite handles errors from rtl_433
+        gracefully.
     '''
 
     def setUp(self):
         '''
         '''
-        pass
+        if 'rtl_433_2sqlite.pid' in os.listdir('/tmp'):
+            pid_file = open('rtl_433_2sqlite.pid', 'r')
+            pid_id = pid_file.readline()
+            pid_file.close()
+            print(pid_id)
+            if pid_id in psutil.pids():
+                raise alreadyRunning
+            else:
+                os.unlink('/tmp/rtl_433_2sqlite.pid')
 
     def tearDown(self):
+        ''' Removes the rtl_433_2sqlite.pid file after a test has finished.
+            Just incase the test didn't
         '''
-        '''
-        os.unlink('/tmp/rtl_433_2sqlite.pid')
+        try:
+            os.unlink('/tmp/rtl_433_2sqlite.pid')
+        except FileNotFoundError:
+            print('rtl_433_2sqlite.pid already deleted')
+
    
-    @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(2))
+    @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(3))
     @patch.object(Queue.Queue, 'get')
-    def testBlankResponse(self, mock_get, mock_empty):
+    @patch.object(rtl_433_2sqlite.asyncFileReader, 'eof', side_effect=ErrorAfter(2))
+    def testBlankResponse(self, mock_eof, mock_get, mock_empty):
         ''' Sends a blank ('') response from rtl_433 to rtl_433_2sqlite.
         '''
         print('Test1')
@@ -311,6 +327,22 @@ class TestRTL433Errors(unittest.TestCase):
             # To catch the error thrown by third loop, see ErrorAfter()
             pass
 
+    def testRTL4332sqlitePID(self):
+        ''' Test that when RTL_433_2sqlite been run that the PID file is
+            created with the corred PID.
+        '''
+        self.assertTrue(False)
+
+    def testRTL4332sqliteRunning(self):
+        ''' Check that a PID file is created for the subprocess with the
+            correct PID.
+        '''
+        self.assertTrue(False)
+
+    def testRTL433subprocesPID(self):
+        ''' Test that when the program has been run that the PID 
+        '''
+        self.assertTrue(False)
 
 if __name__ == "__main__":
     unittest.main()

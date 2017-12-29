@@ -143,16 +143,15 @@ class initDatabase(object):
 
         pass
 
-def createPID(PIDFILE):
+def createPID(PIDFILE, pid_id):
     ''' Creates a temporary PID file to track if processing is running.
     '''
-    pid = str(os.getpid())
     pidfile = PIDFILE 
 
     if os.path.isfile(pidfile):
         raise alreadyRunning    
     f = open(pidfile, 'w')
-    f.write(pid)
+    f.write(str(pid_id))
     f.close()
 
 
@@ -166,7 +165,8 @@ def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqli
         a subprocess asynchronously without risk on deadlocking.
     '''
 
-    createPID(PIDFILE)
+    pid = str(os.getpid())
+    createPID(PIDFILE, pid)
 
     if debug == False:
         command = [rtl_path, "-R", "39","-F", "json"]
@@ -182,6 +182,8 @@ def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqli
     process = subprocess.Popen(command, 
                                stdout=subprocess.PIPE, 
                                stderr=subprocess.PIPE)
+    # print('subprocess pid: ', process.pid)
+    createPID('/tmp/rtl_433.pid', process.pid)
 
     # Launch the asynchronous readers of the process' stdout and stderr.
     stdout_queue = Queue.Queue()
@@ -203,41 +205,57 @@ def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqli
     # print(stderr_reader.eof())
     # print(stderr_queue.empty())
     
+    # print('Starting reader loop')    
     while not stdout_reader.eof() or not stderr_reader.eof(): 
         # Show what we received from standard output.
-        print('a')
+        # print('a')
         while not stdout_queue.empty():     # Whilst we have data.
-            print('b')
+            # print('b')
             while not stderr_queue.empty(): # Whilst we have no errors
-                print('Starting loop')
+                # print('Starting loop')
                 line = stdout_queue.get()
                 try:
                     data = json.loads(line.decode("utf-8"))
+                    # print(data)
                     database.write(data) 
                 except json.decoder.JSONDecodeError:
                     # Garbled data from RTL_433
-                    print('Garbeled data')
+                    # print('Garbeled data')
+                    pass
 
-            # Sleep a bit before asking the readers again.
-            print('Starting sleeping')
-            time.sleep(15)
-            print('Finished sleeping')
+        # Sleep a bit before asking the readers again.
+        # print('Starting sleeping')
+        time.sleep(15)
+        # print('Finished sleeping')
     
-    print('Finished looping')
+    # print('Finished looping')
     # Let's be tidy and join the threads we've started.
     try:
-        print('Trying to close DB')
+        # print('Trying to close DB')
         database.close()
+        # print('DB closed')
     except:
-        print('Failed to close DB')
+        pass
+        # print('Failed to close DB')
 
-    print('Tying threads')
-    stdout_reader.join()
-    stderr_reader.join()
+    # print('Tying threads')
+    # print('Tying stdout')
+    stdout_reader.join(1)
+    # print(stdout_reader.isAlive())
+    # print('Tying stderr')
+    stderr_reader.join(1)
 
-    print('Closing subprocessses')
+    # print('Closing subprocessses')
     # Close subprocess' file descriptors.
+    # print('Closing Stdout')
     process.stdout.close()
+    # print(stdout_reader.isAlive())
+    stdout_reader.join()
+    # print(stdout_reader.isAlive())
+    # print('Closing StdErr')
     process.stderr.close()
+    stdout_reader.join()
+    # print('Finished cosing subprocesses')
 
+    # print('Deleting PID file')
     deletePID(PIDFILE)
