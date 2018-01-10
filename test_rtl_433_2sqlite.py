@@ -260,14 +260,22 @@ class TestRTL433Errors(unittest.TestCase):
         '''
         '''
         if 'rtl_433_2sqlite.pid' in os.listdir('/tmp'):
-            pid_file = open('rtl_433_2sqlite.pid', 'r')
+            pid_file = open('/tmp/rtl_433_2sqlite.pid', 'r')
             pid_id = pid_file.readline()
             pid_file.close()
-            print(pid_id)
             if pid_id in psutil.pids():
                 raise alreadyRunning
             else:
                 os.unlink('/tmp/rtl_433_2sqlite.pid')
+
+        if 'rtl_433.pid' in os.listdir('/tmp'):
+            pid_file = open('/tmp/rtl_433.pid', 'r')
+            pid_id = pid_file.readline()
+            pid_file.close()
+            if pid_id in psutil.pids():
+                raise alreadyRunning
+            else:
+                os.unlink('/tmp/rtl_433.pid')
 
     def tearDown(self):
         ''' Removes the rtl_433_2sqlite.pid file after a test has finished.
@@ -275,8 +283,10 @@ class TestRTL433Errors(unittest.TestCase):
         '''
         try:
             os.unlink('/tmp/rtl_433_2sqlite.pid')
+            os.unlink('/tmp/rtl_433.pid')
         except FileNotFoundError:
-            print('rtl_433_2sqlite.pid already deleted')
+            pass
+            #print('rtl_433_2sqlite.pid already deleted')
 
    
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(3))
