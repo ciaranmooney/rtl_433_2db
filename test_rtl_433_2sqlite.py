@@ -288,11 +288,11 @@ class TestRTL433Errors(unittest.TestCase):
             pass
             #print('rtl_433_2sqlite.pid already deleted')
 
-   
+    @patch('time.sleep', return_value=None)
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(3))
     @patch.object(Queue.Queue, 'get')
     @patch.object(rtl_433_2sqlite.asyncFileReader, 'eof', side_effect=ErrorAfter(2))
-    def testBlankResponse(self, mock_eof, mock_get, mock_empty):
+    def testBlankResponse(self, mock_eof, mock_get, mock_empty, mock_sleep):
         ''' Sends a blank ('') response from rtl_433 to rtl_433_2sqlite.
         '''
         print('Test1')
