@@ -177,27 +177,30 @@ class TestDatabaseInit(unittest.TestCase):
         table = self.db.cur.fetchone()
         self.assertEqual(1, table[0])
 
+
     def testNewMaxID(self):
         ''' 
         '''
         self.assertTrue(False)
 
-    def testPID(self):
+class testCreatePID(unittest.TestCase):
+    '''
+    '''
+    
+    def testCreatePID(self):
         ''' Checks that a file with the correct PID is created.
         '''
         self.assertTrue(False)
 
-    def testRunning(self):
-        ''' Creates two processes and checks than error is raised.
+class testDeletePID(unittest.TestCase):
+    '''
+    '''
+    
+    def testDeletePID(self):
+        '''
         '''
         self.assertTrue(False)
 
-    def testRunningAfterCrash(self):
-        ''' Tests that when a process crashes, leaving a PID file in /tmp that
-            the script checks the PID, replaces the pid in the PID file and 
-            starts running.
-        '''
-        self.assertTrue(False)
 
 class TestAsyncFileReader(unittest.TestCase):
     ''' Tests the asyncFileReaderClass.
@@ -351,6 +354,27 @@ class TestRTL433Errors(unittest.TestCase):
 
     def testRTL433subprocesPID(self):
         ''' Test that when the program has been run that the PID 
+        '''
+        self.assertTrue(False)
+
+class TestRTL433Running(unittest.TestCase):
+    '''
+    '''
+    
+    def setUp(self):
+        '''
+        '''
+        pass
+
+    def testRunning(self):
+        ''' Creates two processes and checks than error is raised.
+        '''
+        self.assertTrue(False)
+
+    def testRunningAfterCrash(self):
+        ''' Tests that when a process crashes, leaving a PID file in /tmp that
+            the script checks the PID, replaces the pid in the PID file and 
+            starts running.
         '''
         self.assertTrue(False)
 
