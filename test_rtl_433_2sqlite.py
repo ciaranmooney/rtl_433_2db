@@ -298,8 +298,6 @@ class TestRTL433Errors(unittest.TestCase):
     def testBlankResponse(self, mock_eof, mock_get, mock_empty, mock_sleep):
         ''' Sends a blank ('') response from rtl_433 to rtl_433_2sqlite.
         '''
-        print('Test1')
-     #   self.assertTrue(False)
         DB_FILE = "/tmp/tempdb.sqlite"
         RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
         DEBUG = False
@@ -312,6 +310,7 @@ class TestRTL433Errors(unittest.TestCase):
         except CallableExhausted:
             # To catch the error thown by second loop
             print('Error\'d')
+        self.assertTrue(False) # What is this test actualy testing?
 
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(4))
     @patch.object(Queue.Queue, 'get')
@@ -321,7 +320,6 @@ class TestRTL433Errors(unittest.TestCase):
 
             Test should continue without any faults.
         '''
-        print('Test2')
         DB_FILE = "/tmp/tempdb.sqlite"
         RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
         DEBUG = False 
