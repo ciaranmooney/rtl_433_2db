@@ -15,6 +15,7 @@ import os
 import psutil
 
 import queue as Queue
+import json 
 from json.decoder import JSONDecodeError
 
 import rtl_433_2sqlite
@@ -342,17 +343,15 @@ class TestRTL433Errors(unittest.TestCase):
         except CallableExhausted:
             # To catch the error thrown by third loop, see ErrorAfter()
             pass
-        print("Call count: ", mock_get.call_count)
         self.assertEqual(mock_get.call_count, 3) # check database calls.
         self.assertEqual(mock_database.call_count, 2) # check database calls.
-        print('Database calls', mock_database.call_args_list)
-        expected = [(good_string,),(good_string,)]
+        json_good = json.loads(good_string.decode('utf-8'))
+        expected = [((json_good,),),((json_good,),)]
         self.assertEqual(mock_database.call_args_list, expected)
-        self.assertTrue(False)
 
     def testRTL4332sqlitePID(self):
         ''' Test that when RTL_433_2sqlite been run that the PID file is
-            created with the corred PID.
+            created with the correct PID.
         '''
         self.assertTrue(False)
 
