@@ -291,11 +291,13 @@ class TestRTL433Errors(unittest.TestCase):
             pass
             #print('rtl_433_2sqlite.pid already deleted')
 
+    @patch.object(rtl_433_2sqlite.initDatabase, 'write')
     @patch('time.sleep', return_value=None)
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(3))
     @patch.object(Queue.Queue, 'get')
     @patch.object(rtl_433_2sqlite.asyncFileReader, 'eof', side_effect=ErrorAfter(2))
-    def testBlankResponse(self, mock_eof, mock_get, mock_empty, mock_sleep):
+    def testBlankResponse(self, mock_eof, mock_get, mock_empty, mock_sleep, 
+                            mock_database):
         ''' Sends a blank ('') response from rtl_433 to rtl_433_2sqlite.
         '''
         DB_FILE = "/tmp/tempdb.sqlite"
@@ -305,16 +307,19 @@ class TestRTL433Errors(unittest.TestCase):
         empty_string = ''.encode()
         mock_get.return_value = empty_string
         db = rtl_433_2sqlite.initDatabase(sq, DB_FILE)
-        try:
-            rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
-        except CallableExhausted:
-            # To catch the error thown by second loop
-            print('Error\'d')
-        self.assertTrue(False) # What is this test actualy testing?
+        rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
+        self.assertEqual(mock_get.call_count, 2) # Data retrived from 
+                                                 # fileReader
+        self.assertEqual(mock_database.call_count, 0) # Should be no database
+                                                      # calls.
 
+    @patch.object(rtl_433_2sqlite.initDatabase, 'write')
+    @patch('time.sleep', return_value=None)
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(4))
     @patch.object(Queue.Queue, 'get')
-    def testGoodBadGoodResponse(self, mock_get, mock_empty):
+    @patch.object(rtl_433_2sqlite.asyncFileReader, 'eof', side_effect=ErrorAfter(2))
+    def testGoodBadGoodResponse(self, mock_eof, mock_get, mock_empty, mock_sleep,
+                                    mock_database):
         ''' Sends a "good" RTL_433 response, then a "bad" (blank) response, 
             then good again.
 
@@ -323,20 +328,27 @@ class TestRTL433Errors(unittest.TestCase):
         DB_FILE = "/tmp/tempdb.sqlite"
         RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
         DEBUG = False 
-        self.assertTrue(False)
         empty_string = ''.encode()
         good_string = ('{"time" : "@0.000000s",'
                        ' "model" : "WG-PB12V1",'
                        ' "id" : 8,'
                        ' "temperature_C" : 20.900,'
                        ' "io" : "111111110011001001100001011010001111111101001100"}').encode()
-        mock_get.side_effect = [good_string, empty_string, good_string]
+        calls = [good_string, empty_string, good_string]
+        mock_get.side_effect = calls
         db = rtl_433_2sqlite.initDatabase(sq, DB_FILE)
         try:
             rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
         except CallableExhausted:
             # To catch the error thrown by third loop, see ErrorAfter()
             pass
+        print("Call count: ", mock_get.call_count)
+        self.assertEqual(mock_get.call_count, 3) # check database calls.
+        self.assertEqual(mock_database.call_count, 2) # check database calls.
+        print('Database calls', mock_database.call_args_list)
+        expected = [(good_string,),(good_string,)]
+        self.assertEqual(mock_database.call_args_list, expected)
+        self.assertTrue(False)
 
     def testRTL4332sqlitePID(self):
         ''' Test that when RTL_433_2sqlite been run that the PID file is

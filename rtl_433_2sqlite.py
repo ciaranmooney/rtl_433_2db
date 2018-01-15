@@ -39,7 +39,7 @@ class asyncFileReader(threading.Thread):
     def run(self):
         ''' The body of the tread: read lines and put them on the queue.
         '''
-        print("Stop Flag: ", self._stop_event.is_set())
+        # print("Stop Flag: ", self._stop_event.is_set())
         for line in iter(self._fd.readline, ''):
             #print("Stop Flag: ", self._stop_event.is_set())
             if self._log != None:
