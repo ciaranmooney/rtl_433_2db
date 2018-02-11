@@ -178,27 +178,8 @@ class TestDatabaseInit(unittest.TestCase):
         table = self.db.cur.fetchone()
         self.assertEqual(1, table[0])
 
-
     def testNewMaxID(self):
         ''' 
-        '''
-        self.assertTrue(False)
-
-class testCreatePID(unittest.TestCase):
-    '''
-    '''
-    
-    def testCreatePID(self):
-        ''' Checks that a file with the correct PID is created.
-        '''
-        self.assertTrue(False)
-
-class testDeletePID(unittest.TestCase):
-    '''
-    '''
-    
-    def testDeletePID(self):
-        '''
         '''
         self.assertTrue(False)
 
@@ -254,6 +235,57 @@ class TestRTL433recordings(unittest.TestCase):
         '''
         '''
         pass
+
+class TestCreatePID(unittest.TestCase):
+    ''' Tests the CreatePID function.
+    '''
+
+    def setUp(self):
+        '''
+        '''
+        pass
+
+    def testNewProcess(self):
+        ''' Test that a new process creates a new PID file with the correct
+            PID.
+        '''
+        pidfile = '/tmp/PIDtestfile.tmp'
+        pid_id = 77777
+        
+        try:
+            os.unlink(pidfile) # remove any files there already
+        except:
+            pass
+
+        rtl_433_2sqlite.createPID(pidfile, pid_id)
+
+        self.assertTrue(os.path.isfile(pidfile))
+       
+        # not using open_pidfile = open(), as this raises a warning about 
+        # unclosed files.
+        with open(pidfile, 'r') as open_pidfile:
+            self.assertEqual(open_pidfile.readline(), pid_id)
+            open_pidfile.close()
+
+
+    def testRunningProcess(self):
+        ''' Test if a PID file exists that the process raises an error.
+        '''
+        self.assertTrue(False)
+
+class TestDeletePID(unittest.TestCase):
+    ''' Test the deletePID function.
+    '''
+
+    def setUp(self):
+        '''
+        '''
+        pass
+
+    def testDeletePIDfile(self):
+        '''
+        '''
+        self.assertTrue(False) 
 
 class TestRTL433Errors(unittest.TestCase):
     ''' Test that checks that rtl_433_2sqlite handles errors from rtl_433
@@ -353,6 +385,10 @@ class TestRTL433Errors(unittest.TestCase):
         ''' Test that when RTL_433_2sqlite been run that the PID file is
             created with the correct PID.
         '''
+        DB_FILE = "/tmp/tempdb.sqlite"
+        RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
+        DEBUG = False 
+        db = rtl_433_2sqlite.initDatabase(sq, DB_FILE)
         self.assertTrue(False)
 
     def testRTL4332sqliteRunning(self):
