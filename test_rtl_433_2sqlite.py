@@ -268,9 +268,17 @@ class TestCreatePID(unittest.TestCase):
 
 
     def testRunningProcess(self):
-        ''' Test if a PID file exists that the process raises an error.
+        ''' Tests when starting a process, if a PID file exists and that there
+            is a process with that PID, that an error is raised.
         '''
         self.assertTrue(False)
+    
+    def testNoRunningProcess(self):
+        ''' Tests when starting a process, if a PID file exists and that there
+            is no process, that a warning is raised but the process continues.
+        '''
+        self.assertTrue(False)
+
 
 class TestDeletePID(unittest.TestCase):
     ''' Test the deletePID function.
