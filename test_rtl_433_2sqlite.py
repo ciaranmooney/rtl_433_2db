@@ -243,34 +243,45 @@ class TestCreatePID(unittest.TestCase):
     def setUp(self):
         '''
         '''
-        pass
+        self.pidfile = '/tmp/PIDtestfile.tmp'
+        self.pid_id = 77777
+        
+        try:
+            os.unlink(self.pidfile) # remove any files there already
+        except:
+            pass
 
     def testNewProcess(self):
         ''' Test that a new process creates a new PID file with the correct
             PID.
         '''
-        pidfile = '/tmp/PIDtestfile.tmp'
-        pid_id = 77777
-        
-        try:
-            os.unlink(pidfile) # remove any files there already
-        except:
-            pass
 
-        rtl_433_2sqlite.createPID(pidfile, pid_id)
-        self.assertTrue(os.path.isfile(pidfile))
+        rtl_433_2sqlite.createPID(self.pidfile, self.pid_id)
+        self.assertTrue(os.path.isfile(self.pidfile))
        
         # not using open_pidfile = open(), as this raises a warning about 
         # unclosed files.
-        with open(pidfile, 'r') as open_pidfile:
-            self.assertEqual(int(open_pidfile.readline()), pid_id)
+        with open(self.pidfile, 'r') as open_pidfile:
+            self.assertEqual(int(open_pidfile.readline()), self.pid_id)
             open_pidfile.close()
 
 
     def testRunningProcess(self):
-        ''' Tests when starting a process, if a PID file exists and that there
-            is a process with that PID, that an error is raised.
+        ''' Tests when starting a process, if a PID file exists, that an 
+            error is raised. 
         '''
+
+        rtl_433_2sqlite.createPID(self.pidfile, self.pid_id)
+        self.assertTrue(os.path.isfile(self.pidfile))
+        
+        # not using open_pidfile = open(), as this raises a warning about 
+        # unclosed files.
+        with open(self.pidfile, 'r') as open_pidfile:
+            self.assertEqual(int(open_pidfile.readline()), self.pid_id)
+            open_pidfile.close()
+
+        self.assertRaises(alreadyRunning, rtl_433_2sqlite.createPID(
+            self.pidfile, 77778))
         self.assertTrue(False)
     
     def testNoRunningProcess(self):
