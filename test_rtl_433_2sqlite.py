@@ -258,13 +258,12 @@ class TestCreatePID(unittest.TestCase):
             pass
 
         rtl_433_2sqlite.createPID(pidfile, pid_id)
-
         self.assertTrue(os.path.isfile(pidfile))
        
         # not using open_pidfile = open(), as this raises a warning about 
         # unclosed files.
         with open(pidfile, 'r') as open_pidfile:
-            self.assertEqual(open_pidfile.readline(), pid_id)
+            self.assertEqual(int(open_pidfile.readline()), pid_id)
             open_pidfile.close()
 
 
