@@ -280,9 +280,8 @@ class TestCreatePID(unittest.TestCase):
             self.assertEqual(int(open_pidfile.readline()), self.pid_id)
             open_pidfile.close()
 
-        self.assertRaises(alreadyRunning, rtl_433_2sqlite.createPID(
-            self.pidfile, 77778))
-        self.assertTrue(False)
+        with self.assertRaises(rtl_433_2sqlite.alreadyRunningError):
+            rtl_433_2sqlite.createPID(self.pidfile, 77778)
     
     def testNoRunningProcess(self):
         ''' Tests when starting a process, if a PID file exists and that there

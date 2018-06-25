@@ -21,6 +21,11 @@ import os
 import sys
 import time
 
+class alreadyRunningError(Exception):
+    ''' Class to handle when the programme is already running
+    '''
+    pass
+
 class asyncFileReader(threading.Thread):
     ''' Helper class to implement asynchronous reading of a file
         in a separate thread. Pushes read lines on a queue to
@@ -160,7 +165,7 @@ def createPID(PIDFILE, pid_id):
     pidfile = PIDFILE 
 
     if os.path.isfile(pidfile):
-        raise alreadyRunning    
+        raise alreadyRunningError    
     f = open(pidfile, 'w')
     f.write(str(pid_id))
     f.close()
