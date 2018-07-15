@@ -172,7 +172,7 @@ def createPID(PIDFILE, pid_id):
 
 
 def deletePID(PIDFILE):
-    '''
+    ''' Deletes the pidfile once the program exits.
     '''
     os.unlink(PIDFILE)
 
