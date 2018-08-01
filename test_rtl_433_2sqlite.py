@@ -401,24 +401,25 @@ class TestRTL433Errors(unittest.TestCase):
         expected = [((json_good,),),((json_good,),)]
         self.assertEqual(mock_database.call_args_list, expected)
 
-    @patch.object(os, 'getpid')
-    def testRTL4332sqlitePID(self,mock_getpid):
-        ''' Test that when RTL_433_2sqlite been run that the PID file is
-            created with the correct PID.
+    @patch.object(os, 'getpid', return_value='7777')
+    @patch.object(rtl_433_2sqlite.initDatabase, 'write')
+    @patch('time.sleep', return_value=None)
+    @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(1))
+    @patch.object(Queue.Queue, 'get')
+    @patch.object(rtl_433_2sqlite.asyncFileReader, 'eof', side_effect=ErrorAfter(1))
+    def testRTL4332sqlitePIDDeleted(self, mock_eof, mock_get, mock_empty, mock_sleep,
+                                mock_database, mock_getpid):
+        ''' Test that when RTL_433_2sqlite been errors out that the PID file is
+            no longer present.
         '''
         DB_FILE = "/tmp/tempdb.sqlite"
         RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
         DEBUG = False 
-        mock_getpid.return_value ='77777'
         db = rtl_433_2sqlite.initDatabase(sq, DB_FILE)
         rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
-        
-        self.assertTrue(False)
-
-    def testRTL4332sqlitePIDDeleted(self):
-        ''' Check that the PID file is removed after an error.
-        '''
-        self.assertTrue(False)
+     
+        with self.assertRaises(FileNotFoundError):
+            open('/tmp/rtl_433_2sqlite.pid')
 
 
 class TestRTL433Running(unittest.TestCase):

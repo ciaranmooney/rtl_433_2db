@@ -237,7 +237,8 @@ def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqli
                     database.write(data) 
                 except json.decoder.JSONDecodeError:
                     # Garbled data from RTL_433
-                    print('Garbeled data')
+                    #print('Garbeled data')
+                    pass
 
         # Sleep a bit before asking the readers again.
         #print('Starting sleeping')
