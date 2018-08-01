@@ -422,27 +422,6 @@ class TestRTL433Errors(unittest.TestCase):
             open('/tmp/rtl_433_2sqlite.pid')
 
 
-class TestRTL433Running(unittest.TestCase):
-    '''
-    '''
-    
-    def setUp(self):
-        '''
-        '''
-        pass
-
-    def testRunning(self):
-        ''' Creates two processes and checks than error is raised.
-        '''
-        self.assertTrue(False)
-
-    def testRunningAfterCrash(self):
-        ''' Tests that when a process crashes, leaving a PID file in /tmp that
-            the script checks the PID, replaces the pid in the PID file and 
-            starts running.
-        '''
-        self.assertTrue(False)
-
 if __name__ == "__main__":
     unittest.main()
 
