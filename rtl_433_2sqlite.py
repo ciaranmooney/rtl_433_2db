@@ -17,6 +17,13 @@ import threading
 import queue as Queue
 import sqlite3 as sq
 import json
+import os
+import sys
+
+class alreadyRunningError(Exception):
+    ''' Class to handle when the programme is already running
+    '''
+    pass
 
 class asyncFileReader(threading.Thread):
     ''' Helper class to implement asynchronous reading of a file
@@ -140,9 +147,31 @@ class initDatabase(object):
 
         pass
 
+def createPID(PIDFILE, pid_id):
+    ''' Creates a temporary PID file to track if processing is running.
+    '''
+    pidfile = PIDFILE 
+
+    if os.path.isfile(pidfile):
+        raise alreadyRunningError    
+    f = open(pidfile, 'w')
+    f.write(str(pid_id))
+    f.close()
+
+
+def deletePID(PIDFILE):
+    ''' Deletes the pidfile once the program exits.
+    '''
+    os.unlink(PIDFILE)
+
+def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqlite.pid'):
     ''' Example of how to consume standard output and standard error of
         a subprocess asynchronously without risk on deadlocking.
     '''
+
+    pid = str(os.getpid())
+    createPID(PIDFILE, pid)
+
     if debug == False:
         command = [rtl_path, "-R", "39","-F", "json"]
         print("\nStarting RTL433\n")
@@ -157,6 +186,8 @@ class initDatabase(object):
     process = subprocess.Popen(command, 
                                stdout=subprocess.PIPE, 
                                stderr=subprocess.PIPE)
+    # print('subprocess pid: ', process.pid)
+    createPID('/tmp/rtl_433.pid', process.pid)
 
     # Launch the asynchronous readers of the process' stdout and stderr.
     stdout_queue = Queue.Queue()
@@ -170,6 +201,13 @@ class initDatabase(object):
     # do queue loop, entering data to database
     # Check the queues if we received some output until there is nothing more 
     # to get.
+   
+    # print(stderr_queue.empty())
+    # print(stderr_queue.get())
+    # print(stderr_queue.get())
+    # print(stderr_queue.get())
+    # print(stderr_reader.eof())
+    # print(stderr_queue.empty())
     
     while not stdout_reader.eof() or not stderr_reader.eof(): 
         # Show what we received from standard output.
@@ -199,3 +237,4 @@ class initDatabase(object):
     process.stdout.close()
     process.stderr.close()
 
+    deletePID(PIDFILE)
