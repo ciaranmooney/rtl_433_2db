@@ -19,6 +19,7 @@ import sqlite3 as sq
 import json
 import os
 import sys
+import time
 
 class alreadyRunningError(Exception):
     ''' Class to handle when the programme is already running
@@ -209,21 +210,30 @@ def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqli
     # print(stderr_reader.eof())
     # print(stderr_queue.empty())
     
+    # print('Starting reader loop')    
     while not stdout_reader.eof() or not stderr_reader.eof(): 
         # Show what we received from standard output.
+        # print('a')
         while not stdout_queue.empty():     # Whilst we have data.
+            # print('b')
             while not stderr_queue.empty(): # Whilst we have no errors
+                # print('Starting loop')
                 line = stdout_queue.get()
                 try:
                     data = json.loads(line.decode("utf-8"))
+                    # print(data)
                     database.write(data) 
                 except json.decoder.JSONDecodeError:
                     # Garbled data from RTL_433
+                    # print('Garbeled data')
                     pass
 
-            # Sleep a bit before asking the readers again.
-            time.sleep(15)
-
+        # Sleep a bit before asking the readers again.
+        # print('Starting sleeping')
+        time.sleep(15)
+        # print('Finished sleeping')
+    
+    # print('Finished looping')
     # Let's be tidy and join the threads we've started.
     try:
         database.close()
