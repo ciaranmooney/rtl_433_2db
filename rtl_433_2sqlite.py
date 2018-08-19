@@ -39,17 +39,28 @@ class asyncFileReader(threading.Thread):
         self._fd = fd
         self._queue = queue
         self._log = log_file
+        self._stop_event = threading.Event()
 
     def run(self):
         ''' The body of the tread: read lines and put them on the queue.
         '''
+        # print("Stop Flag: ", self._stop_event.is_set())
         for line in iter(self._fd.readline, ''):
+            #print("Stop Flag: ", self._stop_event.is_set())
             if self._log != None:
                 with open(self._log, 'w') as log:
                     log.write(line)
                     log.close()
-
+            if self._stop_event.is_set():
+                #print('Stop flag set, breaking')
+                break
             self._queue.put(line)
+        
+    def stop(self):
+        ''' Raises stop event so thread can be killed.
+        '''
+        #print('Setting stop flag')
+        self._stop_event.set()
 
     def eof(self):
         ''' Check whether there is no more content to expect.
@@ -210,41 +221,60 @@ def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqli
     # print(stderr_reader.eof())
     # print(stderr_queue.empty())
     
-    # print('Starting reader loop')    
+    #print('Starting reader loop')    
     while not stdout_reader.eof() or not stderr_reader.eof(): 
         # Show what we received from standard output.
-        # print('a')
+        #print('a')
         while not stdout_queue.empty():     # Whilst we have data.
-            # print('b')
+            #print('b')
             while not stderr_queue.empty(): # Whilst we have no errors
-                # print('Starting loop')
+                #print('Starting loop')
                 line = stdout_queue.get()
+                #print(line)
                 try:
                     data = json.loads(line.decode("utf-8"))
-                    # print(data)
+                    #print(data)
                     database.write(data) 
                 except json.decoder.JSONDecodeError:
                     # Garbled data from RTL_433
-                    # print('Garbeled data')
+                    #print('Garbeled data')
                     pass
 
         # Sleep a bit before asking the readers again.
-        # print('Starting sleeping')
+        #print('Starting sleeping')
         time.sleep(15)
-        # print('Finished sleeping')
+        #print('Finished sleeping')
     
-    # print('Finished looping')
+   # print('Finished looping')
     # Let's be tidy and join the threads we've started.
     try:
+        #print('Trying to close DB')
         database.close()
+        #print('DB closed')
     except:
-        pass
+         pass
+        #print('Failed to close DB')
 
-    stdout_reader.join()
-    stderr_reader.join()
+    #print('Tying threads')
+    #print('Tying stdout')
+    stdout_reader.stop()
+    stdout_reader.join(1)
+    #print(stdout_reader.isAlive())
+    #print('Tying stderr')
+    stderr_reader.stop()
+    stderr_reader.join(1)
 
+    #print('Closing subprocessses')
     # Close subprocess' file descriptors.
+    #print('Closing Stdout')
     process.stdout.close()
+    #print(stdout_reader.isAlive())
+    stdout_reader.join()
+    #print(stdout_reader.isAlive())
+    #print('Closing StdErr')
     process.stderr.close()
+    stdout_reader.join()
+    #print('Finished cosing subprocesses')
 
+    #print('Deleting PID file')
     deletePID(PIDFILE)
