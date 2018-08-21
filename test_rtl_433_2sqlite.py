@@ -15,6 +15,7 @@ import os
 import psutil
 
 import queue as Queue
+import json 
 from json.decoder import JSONDecodeError
 
 import rtl_433_2sqlite
@@ -315,14 +316,22 @@ class TestRTL433Errors(unittest.TestCase):
         '''
         '''
         if 'rtl_433_2sqlite.pid' in os.listdir('/tmp'):
-            pid_file = open('rtl_433_2sqlite.pid', 'r')
+            pid_file = open('/tmp/rtl_433_2sqlite.pid', 'r')
             pid_id = pid_file.readline()
             pid_file.close()
-            print(pid_id)
             if pid_id in psutil.pids():
                 raise alreadyRunning
             else:
                 os.unlink('/tmp/rtl_433_2sqlite.pid')
+
+        if 'rtl_433.pid' in os.listdir('/tmp'):
+            pid_file = open('/tmp/rtl_433.pid', 'r')
+            pid_id = pid_file.readline()
+            pid_file.close()
+            if pid_id in psutil.pids():
+                raise alreadyRunning
+            else:
+                os.unlink('/tmp/rtl_433.pid')
 
     def tearDown(self):
         ''' Removes the rtl_433_2sqlite.pid file after a test has finished.
@@ -330,18 +339,20 @@ class TestRTL433Errors(unittest.TestCase):
         '''
         try:
             os.unlink('/tmp/rtl_433_2sqlite.pid')
+            os.unlink('/tmp/rtl_433.pid')
         except FileNotFoundError:
-            print('rtl_433_2sqlite.pid already deleted')
+            pass
+            #print('rtl_433_2sqlite.pid already deleted')
 
-   
+    @patch.object(rtl_433_2sqlite.initDatabase, 'write')
+    @patch('time.sleep', return_value=None)
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(3))
     @patch.object(Queue.Queue, 'get')
     @patch.object(rtl_433_2sqlite.asyncFileReader, 'eof', side_effect=ErrorAfter(2))
-    def testBlankResponse(self, mock_eof, mock_get, mock_empty):
+    def testBlankResponse(self, mock_eof, mock_get, mock_empty, mock_sleep, 
+                            mock_database):
         ''' Sends a blank ('') response from rtl_433 to rtl_433_2sqlite.
         '''
-        print('Test1')
-     #   self.assertTrue(False)
         DB_FILE = "/tmp/tempdb.sqlite"
         RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
         DEBUG = False
@@ -349,55 +360,67 @@ class TestRTL433Errors(unittest.TestCase):
         empty_string = ''.encode()
         mock_get.return_value = empty_string
         db = rtl_433_2sqlite.initDatabase(sq, DB_FILE)
-        try:
-            rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
-        except CallableExhausted:
-            # To catch the error thown by second loop
-            print('Error\'d')
+        rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
+        self.assertEqual(mock_get.call_count, 2) # Data retrived from 
+                                                 # fileReader
+        self.assertEqual(mock_database.call_count, 0) # Should be no database
+                                                      # calls.
 
+    @patch.object(rtl_433_2sqlite.initDatabase, 'write')
+    @patch('time.sleep', return_value=None)
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(4))
     @patch.object(Queue.Queue, 'get')
-    def testGoodBadGoodResponse(self, mock_get, mock_empty):
+    @patch.object(rtl_433_2sqlite.asyncFileReader, 'eof', side_effect=ErrorAfter(2))
+    def testGoodBadGoodResponse(self, mock_eof, mock_get, mock_empty, mock_sleep,
+                                    mock_database):
         ''' Sends a "good" RTL_433 response, then a "bad" (blank) response, 
             then good again.
 
             Test should continue without any faults.
         '''
-        print('Test2')
         DB_FILE = "/tmp/tempdb.sqlite"
         RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
         DEBUG = False 
-        self.assertTrue(False)
         empty_string = ''.encode()
         good_string = ('{"time" : "@0.000000s",'
                        ' "model" : "WG-PB12V1",'
                        ' "id" : 8,'
                        ' "temperature_C" : 20.900,'
                        ' "io" : "111111110011001001100001011010001111111101001100"}').encode()
-        mock_get.side_effect = [good_string, empty_string, good_string]
+        calls = [good_string, empty_string, good_string]
+        mock_get.side_effect = calls
         db = rtl_433_2sqlite.initDatabase(sq, DB_FILE)
         try:
             rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
         except CallableExhausted:
             # To catch the error thrown by third loop, see ErrorAfter()
             pass
+        self.assertEqual(mock_get.call_count, 3) # check database calls.
+        self.assertEqual(mock_database.call_count, 2) # check database calls.
+        json_good = json.loads(good_string.decode('utf-8'))
+        expected = [((json_good,),),((json_good,),)]
+        self.assertEqual(mock_database.call_args_list, expected)
 
-    def testRTL4332sqlitePID(self):
-        ''' Test that when RTL_433_2sqlite been run that the PID file is
-            created with the corred PID.
+    @patch.object(os, 'getpid', return_value='7777')
+    @patch.object(rtl_433_2sqlite.initDatabase, 'write')
+    @patch('time.sleep', return_value=None)
+    @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(1))
+    @patch.object(Queue.Queue, 'get')
+    @patch.object(rtl_433_2sqlite.asyncFileReader, 'eof', side_effect=ErrorAfter(1))
+    def testRTL4332sqlitePIDDeleted(self, mock_eof, mock_get, mock_empty, mock_sleep,
+                                mock_database, mock_getpid):
+        ''' Test that when RTL_433_2sqlite been errors out that the PID file is
+            no longer present.
         '''
-        self.assertTrue(False)
+        DB_FILE = "/tmp/tempdb.sqlite"
+        RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
+        DEBUG = False 
+        db = rtl_433_2sqlite.initDatabase(sq, DB_FILE)
+        rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
+     
+        with self.assertRaises(FileNotFoundError):
+            open('/tmp/rtl_433_2sqlite.pid')
 
-    def testRTL4332sqliteRunning(self):
-        ''' Check that a PID file is created for the subprocess with the
-            correct PID.
-        '''
-        self.assertTrue(False)
-
-    def testRTL433subprocesPID(self):
-        ''' Test that when the program has been run that the PID 
-        '''
-        self.assertTrue(False)
 
 if __name__ == "__main__":
     unittest.main()
