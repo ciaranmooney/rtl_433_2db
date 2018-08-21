@@ -1,0 +1,24 @@
+# V 0.0
+Original database created for rtl_433_2sqlite.
+
+## Tables
+sensor_data - for storing all data received by rtl_433_2sqlite.
+current_id - intended to store the current max_id value, to act as a key in 
+the sensor_data table.
+
+### sensor_data
+Table Headers
+id - integer - key_id field 
+date - text - contains date/time that data was collected from rtl_433, 
+              format 'YYYY-MM-DD hh:mm:ss.microseconds'
+sensorID - integer - The sensor used (wg-pb12v1) has an ID field, this is
+                     stored so that multiple sensors may be used.
+temperature_C - float - single decimal place precision (XX.x Degrees C)
+io - text - Diagnostic output. The binary data for the packet from the sensor
+            stored to help in future diagnsotics.
+
+
+### current_id
+Table Headers
+max_id - integer - indetend as the key value for sensor_data table.
+
