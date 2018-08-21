@@ -180,7 +180,6 @@ class TestDatabaseInit(unittest.TestCase):
     def testNewMaxID(self):
         ''' 
         '''
-        
         self.assertTrue(False)
 
 
@@ -235,6 +234,77 @@ class TestRTL433recordings(unittest.TestCase):
         '''
         '''
         pass
+
+class TestCreatePID(unittest.TestCase):
+    ''' Tests the CreatePID function.
+    '''
+
+    def setUp(self):
+        '''
+        '''
+        self.pidfile = '/tmp/PIDtestfile.tmp'
+        self.pid_id = 77777
+        
+        try:
+            os.unlink(self.pidfile) # remove any files there already
+        except:
+            pass
+
+    def testNewProcess(self):
+        ''' Test that a new process creates a new PID file with the correct
+            PID.
+        '''
+
+        rtl_433_2sqlite.createPID(self.pidfile, self.pid_id)
+        self.assertTrue(os.path.isfile(self.pidfile))
+       
+        # not using open_pidfile = open(), as this raises a warning about 
+        # unclosed files.
+        with open(self.pidfile, 'r') as open_pidfile:
+            self.assertEqual(int(open_pidfile.readline()), self.pid_id)
+            open_pidfile.close()
+
+
+    def testRunningProcess(self):
+        ''' Tests when starting a process, if a PID file exists, that an 
+            error is raised. 
+        '''
+
+        rtl_433_2sqlite.createPID(self.pidfile, self.pid_id)
+        self.assertTrue(os.path.isfile(self.pidfile))
+        
+        # not using open_pidfile = open(), as this raises a warning about 
+        # unclosed files.
+        with open(self.pidfile, 'r') as open_pidfile:
+            self.assertEqual(int(open_pidfile.readline()), self.pid_id)
+            open_pidfile.close()
+
+        with self.assertRaises(rtl_433_2sqlite.alreadyRunningError):
+            rtl_433_2sqlite.createPID(self.pidfile, 77778)
+    
+
+class TestDeletePID(unittest.TestCase):
+    ''' Test the deletePID function.
+    '''
+
+    def setUp(self):
+        '''
+        '''
+        self.pidfile = '/tmp/PIDtestfile.tmp'
+        self.pid_id = 77777
+        
+        try:
+            os.unlink(self.pidfile) # remove any files there already
+        except:
+            pass
+        
+    def testDeletePIDfile(self):
+        '''
+        '''
+        rtl_433_2sqlite.createPID(self.pidfile, self.pid_id)
+        self.assertTrue(os.path.isfile(self.pidfile))
+        rtl_433_2sqlite.deletePID(self.pidfile)
+
 
 class TestRTL433Errors(unittest.TestCase):
     ''' Test that checks that rtl_433_2sqlite handles errors from rtl_433
@@ -312,6 +382,22 @@ class TestRTL433Errors(unittest.TestCase):
             # To catch the error thrown by third loop, see ErrorAfter()
             pass
 
+    def testRTL4332sqlitePID(self):
+        ''' Test that when RTL_433_2sqlite been run that the PID file is
+            created with the corred PID.
+        '''
+        self.assertTrue(False)
+
+    def testRTL4332sqliteRunning(self):
+        ''' Check that a PID file is created for the subprocess with the
+            correct PID.
+        '''
+        self.assertTrue(False)
+
+    def testRTL433subprocesPID(self):
+        ''' Test that when the program has been run that the PID 
+        '''
+        self.assertTrue(False)
 
 if __name__ == "__main__":
     unittest.main()
