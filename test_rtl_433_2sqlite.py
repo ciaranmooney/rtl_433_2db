@@ -12,6 +12,7 @@ from unittest.mock import mock_open
 from datetime import datetime
 import sqlite3 as sq
 import os
+import psutil
 
 import queue as Queue
 from json.decoder import JSONDecodeError
@@ -35,7 +36,8 @@ class ErrorAfter(object):
     def __call__(self):
         self.calls += 1
         if self.calls > self.limit:
-            raise CallableExhausted
+            #raise CallableExhausted
+            return True
         return False 
 
 class TestDatabaseInit(unittest.TestCase):
@@ -235,15 +237,41 @@ class TestRTL433recordings(unittest.TestCase):
         pass
 
 class TestRTL433Errors(unittest.TestCase):
-    '''
+    ''' Test that checks that rtl_433_2sqlite handles errors from rtl_433
+        gracefully.
     '''
 
-    @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(2))
+    def setUp(self):
+        '''
+        '''
+        if 'rtl_433_2sqlite.pid' in os.listdir('/tmp'):
+            pid_file = open('rtl_433_2sqlite.pid', 'r')
+            pid_id = pid_file.readline()
+            pid_file.close()
+            print(pid_id)
+            if pid_id in psutil.pids():
+                raise alreadyRunning
+            else:
+                os.unlink('/tmp/rtl_433_2sqlite.pid')
+
+    def tearDown(self):
+        ''' Removes the rtl_433_2sqlite.pid file after a test has finished.
+            Just incase the test didn't
+        '''
+        try:
+            os.unlink('/tmp/rtl_433_2sqlite.pid')
+        except FileNotFoundError:
+            print('rtl_433_2sqlite.pid already deleted')
+
+   
+    @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(3))
     @patch.object(Queue.Queue, 'get')
-    def testBlankResponse(self, mock_get, mock_empty):
+    @patch.object(rtl_433_2sqlite.asyncFileReader, 'eof', side_effect=ErrorAfter(2))
+    def testBlankResponse(self, mock_eof, mock_get, mock_empty):
         ''' Sends a blank ('') response from rtl_433 to rtl_433_2sqlite.
         '''
-        
+        print('Test1')
+     #   self.assertTrue(False)
         DB_FILE = "/tmp/tempdb.sqlite"
         RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
         DEBUG = False
@@ -255,7 +283,7 @@ class TestRTL433Errors(unittest.TestCase):
             rtl_433_2sqlite.startSubProcess(RTL433, db, DEBUG)
         except CallableExhausted:
             # To catch the error thown by second loop
-            pass
+            print('Error\'d')
 
     @patch.object(Queue.Queue, 'empty', side_effect=ErrorAfter(4))
     @patch.object(Queue.Queue, 'get')
@@ -265,11 +293,11 @@ class TestRTL433Errors(unittest.TestCase):
 
             Test should continue without any faults.
         '''
-
+        print('Test2')
         DB_FILE = "/tmp/tempdb.sqlite"
         RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
         DEBUG = False 
-
+        self.assertTrue(False)
         empty_string = ''.encode()
         good_string = ('{"time" : "@0.000000s",'
                        ' "model" : "WG-PB12V1",'
