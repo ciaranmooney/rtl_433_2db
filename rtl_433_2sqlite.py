@@ -17,14 +17,14 @@ import threading
 import queue as Queue
 import sqlite3 as sq
 import json
-from io import StringIO
+import os
+import sys
+import time
 
-# BEGIN CONFIG
-DB_FILE = "/tmp/tempdb.sqlite"
-RTL433 = "/home/ciaran/Code/rtl_433/build/src/rtl_433"
-DEBUG = False 
-TESTS = "/home/ciaran/Code/rtl_433_tests/"
-# END CONFIG
+class alreadyRunningError(Exception):
+    ''' Class to handle when the programme is already running
+    '''
+    pass
 
 class asyncFileReader(threading.Thread):
     ''' Helper class to implement asynchronous reading of a file
@@ -39,17 +39,28 @@ class asyncFileReader(threading.Thread):
         self._fd = fd
         self._queue = queue
         self._log = log_file
+        self._stop_event = threading.Event()
 
     def run(self):
         ''' The body of the tread: read lines and put them on the queue.
         '''
+        # print("Stop Flag: ", self._stop_event.is_set())
         for line in iter(self._fd.readline, ''):
+            #print("Stop Flag: ", self._stop_event.is_set())
             if self._log != None:
                 with open(self._log, 'w') as log:
                     log.write(line)
                     log.close()
-
+            if self._stop_event.is_set():
+                #print('Stop flag set, breaking')
+                break
             self._queue.put(line)
+        
+    def stop(self):
+        ''' Raises stop event so thread can be killed.
+        '''
+        #print('Setting stop flag')
+        self._stop_event.set()
 
     def eof(self):
         ''' Check whether there is no more content to expect.
@@ -148,10 +159,31 @@ class initDatabase(object):
 
         pass
 
-def startSubProcess(rtl_path, database, debug=False):
+def createPID(PIDFILE, pid_id):
+    ''' Creates a temporary PID file to track if processing is running.
+    '''
+    pidfile = PIDFILE 
+
+    if os.path.isfile(pidfile):
+        raise alreadyRunningError    
+    f = open(pidfile, 'w')
+    f.write(str(pid_id))
+    f.close()
+
+
+def deletePID(PIDFILE):
+    ''' Deletes the pidfile once the program exits.
+    '''
+    os.unlink(PIDFILE)
+
+def startSubProcess(rtl_path, database, debug=False, PIDFILE='/tmp/rtl_433_2sqlite.pid'):
     ''' Example of how to consume standard output and standard error of
         a subprocess asynchronously without risk on deadlocking.
     '''
+
+    pid = str(os.getpid())
+    createPID(PIDFILE, pid)
+
     if debug == False:
         command = [rtl_path, "-R", "39","-F", "json"]
         print("\nStarting RTL433\n")
@@ -166,6 +198,8 @@ def startSubProcess(rtl_path, database, debug=False):
     process = subprocess.Popen(command, 
                                stdout=subprocess.PIPE, 
                                stderr=subprocess.PIPE)
+    # print('subprocess pid: ', process.pid)
+    createPID('/tmp/rtl_433.pid', process.pid)
 
     # Launch the asynchronous readers of the process' stdout and stderr.
     stdout_queue = Queue.Queue()
@@ -179,36 +213,68 @@ def startSubProcess(rtl_path, database, debug=False):
     # do queue loop, entering data to database
     # Check the queues if we received some output until there is nothing more 
     # to get.
+   
+    # print(stderr_queue.empty())
+    # print(stderr_queue.get())
+    # print(stderr_queue.get())
+    # print(stderr_queue.get())
+    # print(stderr_reader.eof())
+    # print(stderr_queue.empty())
     
+    #print('Starting reader loop')    
     while not stdout_reader.eof() or not stderr_reader.eof(): 
         # Show what we received from standard output.
+        #print('a')
         while not stdout_queue.empty():     # Whilst we have data.
+            #print('b')
             while not stderr_queue.empty(): # Whilst we have no errors
+                #print('Starting loop')
                 line = stdout_queue.get()
+                #print(line)
                 try:
                     data = json.loads(line.decode("utf-8"))
+                    #print(data)
                     database.write(data) 
                 except json.decoder.JSONDecodeError:
                     # Garbled data from RTL_433
+                    #print('Garbeled data')
                     pass
 
-            # Sleep a bit before asking the readers again.
-            time.sleep(15)
-
+        # Sleep a bit before asking the readers again.
+        #print('Starting sleeping')
+        time.sleep(15)
+        #print('Finished sleeping')
+    
+   # print('Finished looping')
     # Let's be tidy and join the threads we've started.
     try:
+        #print('Trying to close DB')
         database.close()
+        #print('DB closed')
     except:
-        pass
+         pass
+        #print('Failed to close DB')
 
-    stdout_reader.join()
-    stderr_reader.join()
+    #print('Tying threads')
+    #print('Tying stdout')
+    stdout_reader.stop()
+    stdout_reader.join(1)
+    #print(stdout_reader.isAlive())
+    #print('Tying stderr')
+    stderr_reader.stop()
+    stderr_reader.join(1)
 
+    #print('Closing subprocessses')
     # Close subprocess' file descriptors.
+    #print('Closing Stdout')
     process.stdout.close()
+    #print(stdout_reader.isAlive())
+    stdout_reader.join()
+    #print(stdout_reader.isAlive())
+    #print('Closing StdErr')
     process.stderr.close()
+    stdout_reader.join()
+    #print('Finished cosing subprocesses')
 
-if __name__ == '__main__':
-    db = initDatabase(sq, DB_FILE)
-    startSubProcess(RTL433, db, DEBUG)
-    print("Closing down")
+    #print('Deleting PID file')
+    deletePID(PIDFILE)
