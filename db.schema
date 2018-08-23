@@ -17,8 +17,29 @@ temperature_C - float - single decimal place precision (XX.x Degrees C)
 io - text - Diagnostic output. The binary data for the packet from the sensor
             stored to help in future diagnsotics.
 
-
 ### current_id
 Table Headers
 max_id - integer - indetend as the key value for sensor_data table.
 
+
+# V 1.0
+Removed id and io from sensor_data. Removed current_id table
+
+Created version table
+
+## Tables
+sensor_data - for storing all data received by rtl_433_2sqlite 
+db_version - for storing the database version
+
+### sensor_data
+Table Headers
+date - text - contains date/time that data was collected from rtl_433, 
+              format 'YYYY-MM-DD hh:mm:ss.microseconds'
+sensorID - integer - The sensor used (wg-pb12v1) has an ID field, this is
+                     stored so that multiple sensors may be used.
+temperature_C - float - single decimal place precision (XX.x Degrees C)
+
+### version
+Table Headers
+db_version -
+ 
