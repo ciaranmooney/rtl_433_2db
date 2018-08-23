@@ -158,31 +158,6 @@ class TestDatabaseInit(unittest.TestCase):
             table = self.db.cur.fetchone()
             self.assertEqual(1, table[0])
 
-    def test_get_max_id(self):
-        '''
-        '''
-        test_json = {"time" : "@0.000000s", "model" : "WG-PB12V1", 
-                     "id" : 8, "temperature_C" : 20.900, 
-                     "io" : "111111110011001001100001011010001111111101001100"}
-            
-        # Test that id starts at zero. 
-        self.db.cur.execute('''SELECT * FROM current_id;''')
-        table = self.db.cur.fetchone()
-        self.assertEqual(0, table[0])
-            
-        self.db.write(test_json)
-
-        # Check that the id incremented.    
-        self.db.connect()
-        self.db.cur.execute('''SELECT * FROM current_id;''')
-        table = self.db.cur.fetchone()
-        self.assertEqual(1, table[0])
-
-    def testNewMaxID(self):
-        ''' 
-        '''
-        self.assertTrue(False)
-
     def testVersionMatch(self):
         ''' Tests that the database version matches the expected value.
         '''
