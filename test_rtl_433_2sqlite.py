@@ -183,6 +183,16 @@ class TestDatabaseInit(unittest.TestCase):
         '''
         self.assertTrue(False)
 
+    def testVersionMatch(self):
+        ''' Tests that the database version matches the expected value.
+        '''
+        self.assertTrue(False)
+
+    def testVersionMismatch(self):
+        ''' Tests that an error is raised when there is a database version
+            mis-match.
+        '''
+        self.asserTrue(False)
 
 class TestAsyncFileReader(unittest.TestCase):
     ''' Tests the asyncFileReaderClass.
