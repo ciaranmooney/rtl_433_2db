@@ -13,9 +13,10 @@ systems. I may flesh these out in future
 * Raspberry Pi 3
 * Raspbian GNU/Linux 8 (jessie)
 * RTL_433 - commit 7d558b770a11c5af5d9c231755a6bcf1fb2059e9
-* fstab - must mount USB drive during boot. If no specific mount point
-defined in fstab, the program is run by Cron before USB disks mounted. fstab
-example
+* fstab - must mount USB drive during boot using exlicity fstab entry.
+    The auto-mount routine of Raspbian is run after cron, so the script will
+    not be able to write to the drive. 
+* fstab example
 UUID=f3e278c2-1043-4d4c-9440-e761d0a3aa77       /media/piDrive  ext4    defaults          0       0
 * Crontab line
  @reboot     root    /opt/start_logger.py
