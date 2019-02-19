@@ -7,7 +7,7 @@ current_id - intended to store the current max_id value, to act as a key in
 the sensor_data table.
 
 ### sensor_data
-Table Headers
+Column Header - format - contents
 id - integer - key_id field 
 date - text - contains date/time that data was collected from rtl_433, 
               format 'YYYY-MM-DD hh:mm:ss.microseconds'
@@ -18,21 +18,22 @@ io - text - Diagnostic output. The binary data for the packet from the sensor
             stored to help in future diagnsotics.
 
 ### current_id
-Table Headers
+Column Header - format - contents
 max_id - integer - indetend as the key value for sensor_data table.
 
 
 # V 1.0
-Removed id and io from sensor_data. Removed current_id table
-
-Created version table
+## Changes
+* Removed id and io from sensor_data. 
+* Removed current_id table
+* Created version table
 
 ## Tables
 sensor_data - for storing all data received by rtl_433_2sqlite 
 db_version - for storing the database version
 
 ### sensor_data
-Table Headers
+Column Header - format - contents
 date - text - contains date/time that data was collected from rtl_433, 
               format 'YYYY-MM-DD hh:mm:ss.microseconds'
 sensorID - integer - The sensor used (wg-pb12v1) has an ID field, this is
@@ -40,6 +41,6 @@ sensorID - integer - The sensor used (wg-pb12v1) has an ID field, this is
 temperature_C - float - single decimal place precision (XX.x Degrees C)
 
 ### version
-Table Headers
-db_version -
+Column Header - format - contents
+db_version - float - version of database (ie 1.0) 
  
